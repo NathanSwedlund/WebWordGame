@@ -1,0 +1,84 @@
+// Setting up canvas and canvas context
+var canvas = document.querySelector("canvas");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const ctx = canvas.getContext("2d");
+
+
+function generateTree (a) {
+    ctx.beginPath();
+    ctx.save();
+
+    ctx.strokeStyle = a.brCol;
+    ctx.fillStyle   = a.leafCol;
+    ctx.lineWidth   = a.brWidth;
+    ctx.shadowBlur  = a.blur;
+    ctx.shadowColor = a.blurCol;
+
+    ctx.translate(a.startX, a.startY);
+    ctx.rotate(a.angle * Math.PI/180);
+    ctx.moveTo(0,0);
+    // ctx.lineTo(0, -len);
+
+    if (a.angle > 0) {
+        ctx.quadraticCurveTo(-10, -a.len/2, 0, -a.len);
+    } else {
+        ctx.quadraticCurveTo(10, -a.len/2, 0, -a.len);
+    }
+    ctx.stroke();
+
+    if(a.len < 10) {
+        ctx.beginPath();
+        ctx.arc(0,-a.len,10,0, Math.PI/2);
+        ctx.fill();
+
+        ctx.restore();
+        return;
+    }
+
+    // Getting new argumments
+    a.startX  = canvas.width/2;
+    a.startY  = canvas.height -80;
+    a.len     = a.len*0.75;
+
+    var curveDescent = (Math.random()*10)+10
+    var widthDescent = 0.5 + (Math.random()*0.4);
+
+    var newArgs1 = a;
+    newArgs1.angle   = a.angle-curveDescent;
+    newArgs1.brWidth = a.brWidth*widthDescent;
+
+    var newArgs2 = a;
+    newArgs2.angle   = a.angle-curveDescent;
+    newArgs2.brWidth = a.brWidth*widthDescent;
+    console.log(a);
+
+    // Generating more branches
+    generateTree(newArgs1);
+    generateTree(newArgs2);
+    ctx.restore();
+}
+
+function generateRandomTree() {
+
+    var args =
+    {
+        startX  : canvas.width/2,
+        startY  : canvas.height -80,
+        len     : 80 + (Math.random()*60),
+        angle   : (Math.random()-0.5)*10,
+        brWidth : 10 + Math.random()*20,
+        brCol   : "rgb("+(Math.random()*255)+", "+(Math.random()*255)+", "+(Math.random()*255)+")",
+        leafCol : "rgb("+(Math.random()*255)+", "+(Math.random()*255)+", "+(Math.random()*255)+")",
+        blur    : 10+Math.random()*10,
+        blurCol : "rgb("+(Math.random()*255)+", "+(Math.random()*255)+", "+(Math.random()*255)+")"
+    };
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    generateTree (args);
+    button.style.background = args.brCol;
+}
+
+// Binding button click
+const button = document.querySelector(".generateTreeButton");
+button.onclick = generateRandomTree;
