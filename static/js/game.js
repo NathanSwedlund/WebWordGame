@@ -7,6 +7,8 @@
 //  implement multiplayer
 
 //  Setting Up Major game variables -----------------------------------------
+
+tempTileLocs = [null,null,null,null,null,null,null];
 var tileBag = [
   'A','A','A','A','A','A','A','A','A',
   'B','B',
@@ -164,15 +166,25 @@ canvas.addEventListener("mousedown", function (evt) {
   if(removal.x != -1 && removal.y != -1)
   {
     placedNum--;
-    temp = boardTemp[removal.y][removal.x];
-    boardTemp[removal.y][removal.x] = '';
-    for (let i = 0; i < hand.length; i++) {
-      if(hand[i] == '')
-      {
-        hand[i] = temp;
+    for (let i = 0; i < 7; i++) {
+      if(tempTileLocs[i] && tempTileLocs[i].x == removal.x && tempTileLocs[i].y == removal.y){
+        hand[i] = boardTemp[removal.y][removal.x];
+        boardTemp[removal.y][removal.x] = '';
+        tempTileLocs[i] = null;
         renderHand();
         renderBoard();
-        return;
+        console.log("placedNum:", placedNum);
+        break;
+      }
+    }
+    if(placedNum == 1)
+    {
+      for (let i = 0; i < 7; i++) {
+        if(tempTileLocs[i])
+        {
+          lastRow = tempTileLocs[i].y;
+          lastCol = tempTileLocs[i].x;
+        }
       }
     }
   }
@@ -182,20 +194,83 @@ canvas.addEventListener("mousedown", function (evt) {
       place(gridNum, selected);
   }
 });
+
+
+
+function isValidPlay()
+{
+  // Getting relative locations to check for grouping
+  var locs = []
+  for (let i = 0; i < tempTileLocs.length; i++) {
+    if(tempTileLocs[i])
+    {
+      if(isVertical)
+        locs.push(tempTileLocs[i].y);
+      else
+        locs.push(tempTileLocs[i].x);
+    }
+  }
+  console.log("LOCS: ", locs);
+  
+  // Checking for grouping
+  locs.sort(function(a, b){return a-b});
+  console.log("LOCS-S: ", locs);
+
+  num = locs[0];
+  var isGrouped = true;
+  for (let i = 0; i < locs.length && isGrouped; i++) {
+    if(num != locs[i])
+      isGrouped = false;
+    num++;
+  }
+  if(!isGrouped)
+    return false;
+
+  console.log("Is grouped");
+
+  // Checking for adjacency of already played tiles.
+  var notConnected = true;
+  for (let i = 0; i < tempTileLocs.length && notConnected; i++) {
+    t = tempTileLocs[i]
+    if(t)
+    {
+      // If any of the tiles are played on the middle cell
+      if(t.x == 7 && t.y == 7)
+      {
+        console.log("is first play");
+        return true;
+      }
+        if(board[t.y][t.x-1] && board[t.y][t.x-1] != '')
+          notConnected = false;
+        if(board[t.y][t.x+1] && board[t.y][t.x+1] != '')
+          notConnected = false;
+        if(board[t.y-1][t.x] && board[t.y-1][t.x] != '')
+          notConnected = false;
+        if(board[t.y+1][t.x] && board[t.y+1][t.x] != '')
+          notConnected = false;
+      }
+  }
+  if(!notConnected)
+    console.log("Connected");
+  else
+    console.log("notConnected"); 
+
+  return !notConnected;
+}
 canvas.addEventListener("mousemove", function (evt) {
   coords = getMouseGridNum(evt);
   // If mouse is over board
   if(coords.x <= 14 && coords.y <= 14 && coords.x >= 0 && coords.y >= 0)
   {
-    console.log("over board");
+    // console.log("over board");
     
     // If it is hovering over a tile this person placed but has not yet played...
     if(board[coords.y][coords.x] != boardTemp[coords.y][coords.x])
     {
-      console.log("your tile");
+      // console.log("your tile");
       removal.x = coords.x;
       removal.y = coords.y;
-      console.log("move ",removal)
+      // console.log("move ",removal)
       return;
     }
   }
@@ -227,6 +302,10 @@ tileButtons[4].addEventListener("mousedown", function (evt) { tileClick(4)});
 tileButtons[5].addEventListener("mousedown", function (evt) { tileClick(5)});
 tileButtons[6].addEventListener("mousedown", function (evt) { tileClick(6)});
 
+canvas.addEventListener("mouseup", function (evt) {
+  console.log("up");
+});
+
 // Selects the approprite tile once clicked
 function tileClick(tileNum){
     selected = hand[tileNum];
@@ -242,6 +321,15 @@ playButton.style.width = "168px";
 playButton.style.height = "70px";
 playButton.addEventListener("mousedown", function (evt) {
     // Updating board with deep copy every time a play is made
+    if(!isValidPlay())
+    {
+      console.log("Invalid play");
+      return;
+    }
+
+    tempTileLocs = [null,null,null,null,null,null,null];
+    console.log("Valid play");
+
     board = [];
     boardTemp.forEach(element => {
       board.push([...element])
@@ -311,14 +399,13 @@ function place(coords, tileVal)
     console.log({v:isVertical, lc:lastCol, lr:lastRow});
     if(canPlace(coords))
     {   
+        tempTileLocs[selectedNum] = coords;
+
         console.log("placing");
         console.log("board[0][0]", board[0][0]);
 
         boardTemp[coords.y][coords.x] = tileVal;
         console.log("board[0][0]", board[0][0]);
-
-        lastRow = coords.y;
-        lastCol = coords.x;
 
         placedNum++;
         renderBoard()
@@ -344,6 +431,8 @@ function canPlace(coords)
         
         if( placedNum == 0)
         {
+            lastRow = coords.y;
+            lastCol = coords.x;
             console.log("placedNum == 0");
             return true;
         }
@@ -448,4 +537,5 @@ function pullTile()
 //----------------------------------------------------------------------
 
 // Renders hand initially
+draw();
 renderHand();

@@ -12,4 +12,10 @@ body {
 img{
   position: absolute;
   z-index: 10;
+  /* -user-drag: none; 
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  -ms-user-select: none; */
 }
