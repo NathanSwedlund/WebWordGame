@@ -1,0 +1,18 @@
+{
+  "name": "IT325_Web2_Sockets_Example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon --ignore feedback.json server.js"
+  },
+  "keywords": [],
+  "author": "NSS/BNR",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "nodemon": "^2.0.3",
+    "socket.io": "^2.3.0"
+  }
+}

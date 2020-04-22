@@ -1,0 +1,15 @@
+canvas {
+  margin:0;
+  padding:0;
+  background: white;
+}
+
+body {
+  margin: 0;
+  margin-bottom: 0;
+  background: #999;
+}
+img{
+  position: absolute;
+  z-index: 10;
+}
