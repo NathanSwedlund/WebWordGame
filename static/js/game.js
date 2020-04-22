@@ -1,3 +1,11 @@
+// TODO:
+//  Add validate play function that runs on playbutton mousedown. 
+//  Add tempTileLocs array to help with this.
+//  
+//  Create score play function
+// 
+//  implement multiplayer
+
 //  Setting Up Major game variables -----------------------------------------
 var tileBag = [
   'A','A','A','A','A','A','A','A','A',
@@ -141,6 +149,7 @@ var lastCol = -1
 var lastRow = -1
 var isVertical;
 var placedNum = 0;
+var removal = { x: -1, y:-1};
 // --------------------------------------------------------
 
 // Setting up board board GUI ------------------
@@ -151,6 +160,22 @@ console.log(canvas);
 setCanvasSize()
 var ctx = canvas.getContext("2d");
 canvas.addEventListener("mousedown", function (evt) {
+  // Removing already placed tile
+  if(removal.x != -1 && removal.y != -1)
+  {
+    placedNum--;
+    temp = boardTemp[removal.y][removal.x];
+    boardTemp[removal.y][removal.x] = '';
+    for (let i = 0; i < hand.length; i++) {
+      if(hand[i] == '')
+      {
+        hand[i] = temp;
+        renderHand();
+        renderBoard();
+        return;
+      }
+    }
+  }
   if(selected != "")
   {   
       gridNum = getMouseGridNum(evt);
@@ -158,7 +183,25 @@ canvas.addEventListener("mousedown", function (evt) {
   }
 });
 canvas.addEventListener("mousemove", function (evt) {
-  console.log(getMouseGridNum(evt));
+  coords = getMouseGridNum(evt);
+  // If mouse is over board
+  if(coords.x <= 14 && coords.y <= 14 && coords.x >= 0 && coords.y >= 0)
+  {
+    console.log("over board");
+    
+    // If it is hovering over a tile this person placed but has not yet played...
+    if(board[coords.y][coords.x] != boardTemp[coords.y][coords.x])
+    {
+      console.log("your tile");
+      removal.x = coords.x;
+      removal.y = coords.y;
+      console.log("move ",removal)
+      return;
+    }
+  }
+
+  removal.x = -1;
+  removal.y = -1;
 });
 refreshScreen();
 
@@ -187,13 +230,8 @@ tileButtons[6].addEventListener("mousedown", function (evt) { tileClick(6)});
 // Selects the approprite tile once clicked
 function tileClick(tileNum){
     selected = hand[tileNum];
-
-    if(selectedNum != -1)
-      tileButtons[selectedNum].src = "img/letters/"+hand[selectedNum]+".png";
-      
     selectedNum = tileNum;
-    tileButtons[selectedNum].src = "img/letters_selected/"+hand[selectedNum]+".png";    
-    console.log(selected);
+    renderHand();
 }
 
 // Setting up play button
@@ -203,7 +241,12 @@ playButton.style.left = "750px";
 playButton.style.width = "168px";
 playButton.style.height = "70px";
 playButton.addEventListener("mousedown", function (evt) {
-    board = boardTemp;
+    // Updating board with deep copy every time a play is made
+    board = [];
+    boardTemp.forEach(element => {
+      board.push([...element])
+    });
+
     draw();
     selected = "";
     selectedNum = -1;
@@ -211,6 +254,7 @@ playButton.addEventListener("mousedown", function (evt) {
     lastCol = -1;
     lastRow = -1;
     turnNum = (turnNum+1)%playerNum;
+    renderBoard()    
 });
 // -------------------------------------------------------
 
@@ -268,10 +312,11 @@ function place(coords, tileVal)
     if(canPlace(coords))
     {   
         console.log("placing");
-        
-        board[coords.y][coords.x] = tileVal;
-        console.log("board["+coords.y+"]["+coords.x+"] == "+tileVal);
-        
+        console.log("board[0][0]", board[0][0]);
+
+        boardTemp[coords.y][coords.x] = tileVal;
+        console.log("board[0][0]", board[0][0]);
+
         lastRow = coords.y;
         lastCol = coords.x;
 
@@ -293,7 +338,7 @@ function canPlace(coords)
         return false;
     }
 
-    if(board[coords.y][coords.x] == "")
+    if(boardTemp[coords.y][coords.x] == "")
     {
         console.log("Loc is empty");
         
@@ -329,6 +374,14 @@ function canPlace(coords)
 function renderHand()
 {
     for (var i = 0; i < 7; i++) {
+      if(i == selectedNum && hand[i] != "")
+      {
+
+        tileButtons[i].src = "img/letters_selected/"+hand[i]+".png";
+        tileButtons[i].value = hand[i];
+      }
+      else
+      {
         if(hand[i] != "")
         {
             tileButtons[i].src = "img/letters/"+hand[i]+".png";
@@ -337,27 +390,36 @@ function renderHand()
             tileButtons[i].src = "img/letters/empty.png";
             tileButtons[i].value = hand[i];
         }
+      }
     }
 }
 function renderBoard()
 {
-  offsetX = 43;
-  offsetY = 43;
-  paddingX = 0;
-  paddingY = 0;
-  tileSize = 42.3;
-  ysizeMod = 0.4;
-  for(var i = 0; i < 15; i++)
-  {
-      for(var x = 0; x < 15; x++)
-      {
-          if(board[i][x] != '')
-          {
-              xCoord = offsetX+tileSize*x;
-              yCoord = offsetY+tileSize*i;
-              ctx.drawImage(tiles[board[i][x]].img, xCoord, yCoord+ysizeMod*i, tileSize,tileSize+ysizeMod);
-          }
-      }
+  boardImage = new Image();
+  boardImage.src = "img/EmptyBoard.png";
+  boardImage.onload = function() {
+    ctx.drawImage(boardImage,0,0,canvas.width,canvas.height);
+    offsetX = 43;
+    offsetY = 43;
+    paddingX = 0;
+    paddingY = 0;
+    tileSize = 42.3;
+    ysizeMod = 0.4;
+    for(var i = 0; i < 15; i++)
+    {
+        for(var x = 0; x < 15; x++)
+        {
+            if(boardTemp[i][x] != '')
+            {
+                xCoord = offsetX+tileSize*x;
+                yCoord = offsetY+tileSize*i;
+                if(boardTemp[i][x] == board[i][x])
+                  ctx.drawImage(tiles[boardTemp[i][x]].img, xCoord, yCoord+ysizeMod*i, tileSize,tileSize+ysizeMod);
+                else
+                  ctx.drawImage(tiles[boardTemp[i][x]].img_selected, xCoord, yCoord+ysizeMod*i, tileSize,tileSize+ysizeMod);
+            }
+        }
+    }
   }
 }
 
