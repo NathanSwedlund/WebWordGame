@@ -159,10 +159,15 @@ var lastRow = -1
 var isVertical;
 var placedNum = 0;
 var removal = { x: -1, y:-1};
+
+
 // --------------------------------------------------------
 
 // Setting up board board GUI ------------------
 //Setting up canvas
+scoreText = $("#scoreText")[0];
+scoreLabel = $("#scoreLabel")[0];
+
 var canvas = $("canvas")[0];
 console.log(canvas);
 
@@ -512,9 +517,12 @@ playButton.addEventListener("mousedown", function (evt) {
 
     // console.log("Valid play");
 
-    // TEMPORARY
     playerScores[playerID] += score();
+    $("#scoreText").text(playerScores);
+
+          // --- TEMPORARY ---
     playerID = (playerID+1)%playerNum;
+          // --- TEMPORARY ---
 
     // reseting temp tile locations
     tempTileLocs = [null,null,null,null,null,null,null];
@@ -673,9 +681,11 @@ function renderHand()
 }
 function renderBoard()
 {
-  // $("#playerText").style.top = 100;
-  // $("#playerText").style.left = 800;
-  
+  scoreText.style.top = "80px";
+  scoreText.style.left = "800px";
+  scoreLabel.style.top = "80px";
+  scoreLabel.style.left = "700px";
+
   boardImage = new Image();
   boardImage.src = "img/EmptyBoard.png";
   boardImage.onload = function() {
@@ -731,3 +741,4 @@ function pullTile()
 // Renders hand initially
 draw();
 renderHand();
+renderBoard();
