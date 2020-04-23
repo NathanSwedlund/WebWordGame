@@ -19,3 +19,7 @@ img{
   -webkit-user-select: none;
   -ms-user-select: none; */
 }
+p{
+  position: absolute;
+  z-index: 10;
+}

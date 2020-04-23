@@ -65,7 +65,8 @@ var tilePoints = {
   W: 4,
   X: 8,
   Y: 4,
-  Z: 10
+  Z: 10,
+  _blank:0
 };
 var letters = [
   'A','B','C','D','E','F','G','H','I','J','K','L','M','N',
@@ -144,7 +145,13 @@ var hand = ['','','','','','',''];
 
 // Setting up lesser variables ----------------------------
 turnNum = 0
-playerNum = 0;
+playerID = 0;
+playerNum = 3;
+
+playerScores = []
+for(var i = 0; i < playerNum; i++)
+  playerScores.push(0);
+
 var selected = "";
 var selectedNum = -1;
 var lastCol = -1
@@ -195,33 +202,208 @@ canvas.addEventListener("mousedown", function (evt) {
   }
 });
 
+function getConnectedTileCoords(coords){
+  ret = []
+  // Checking to the right
+  walkerX = coords.x+1;
+  while(board[coords.y][walkerX] && board[coords.y][walkerX] != '')
+  {
+    ret.push({x:walkerX, y:coords.y});
+    walkerX++;
+  }
 
+  // Checking to the left
+  walkerX = coords.x-1;
+  while(board[coords.y][walkerX] && board[coords.y][walkerX] != '')
+  {
+    ret.push({x:walkerX, y:coords.y});
+    walkerX--;
+  }
+
+  // Checking below
+  walkerY = coords.y+1;
+  while(board[walkerY] && board[walkerY][coords.x] != '')
+  {
+    ret.push({x:coords.x, y:walkerY});
+    walkerY++;
+  }
+
+  // Checking above
+  walkerY = coords.y-1;
+  while(board[walkerY] && board[walkerY][coords.x] != '')
+  {
+    ret.push({x:coords.x, y:walkerY});
+    walkerY--;
+  }
+
+  return ret;
+}
+
+function score(){
+  _score = 0;
+
+  tempModifiers = []
+  for(var i = 0; i < 15; i++)
+  {
+    tempModifiers.push([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
+  }
+  // console.log("tempTileLocs : ",tempTileLocs);
+  
+  for(var i = 0; i < 7; i++){
+    tileLoc = tempTileLocs[i];
+    // console.log(tileLoc);
+    
+    if(tileLoc != null)
+    {
+      x = tileLoc.x;
+      y = tileLoc.y;
+      tempModifiers[y][x] = 1;
+
+      double = false;
+      // Checking for double axis play
+      if(placedNum > 1)
+        if(isVertical == true){
+          if(boardTemp[y][x-1] && boardTemp[y][x-1] != '')
+            double = true
+          if(boardTemp[y][x+1] && boardTemp[y][x+1] != '')
+            double = true
+        }
+        if(isVertical == false) {
+          if(boardTemp[y-1][x] && boardTemp[y-1][x] != '')
+            double = true
+          if(boardTemp[y+1][x] && boardTemp[y+1][x] != '')
+            double = true
+        }
+      if(placedNum == 1)
+      {
+        hasHorizontal = false;
+        hasVertical = false;
+        if(boardTemp[y-1][x] && boardTemp[y-1][x] != '')
+          hasVertical = true        
+        if(boardTemp[y+1][x] && boardTemp[y+1][x] != '')
+          hasVertical = true        
+        if(boardTemp[y][x-1] && boardTemp[y][x-1] != '')
+          hasHorizontal = true;
+        if(boardTemp[y][x+1] && boardTemp[y][x+1] != '')
+          hasHorizontal = true;
+
+        double = hasHorizontal&& hasVertical;
+      }
+      soloMult = 1
+      if(modifiers[y][x] == '2L' || modifiers[y][x] == "2W")
+        soloMult = 2;
+      if(modifiers[y][x] == '3L' || modifiers[y][x] == "3W")
+        soloMult = 3;
+
+      if(double)
+        _score += tilePoints[boardTemp[y][x]]*soloMult;
+
+
+
+      // console.log("OUT Channging tempModifiers["+y+"]["+x+"] = 1");
+
+      cons = getConnectedTileCoords({x:x, y:y});
+      // console.log("cons :: ", cons);
+      
+      // Changing connected tiles temp modifier value
+      for(var j = 0; j < cons.length; j++){
+        con = cons[j];
+        tempModifiers[con.y][con.x] = 1;
+      };
+    }
+  };
+  
+  for(var i = 0; i < 7; i++){
+    tileLoc = tempTileLocs[i];
+    if(tileLoc != null)
+    {
+      x = tileLoc.x;
+      y = tileLoc.y;
+      if(modifiers[y][x] == '2L')
+        tempModifiers[y][x] *= 2;
+      if(modifiers[y][x] == '3L')
+        tempModifiers[y][x] *= 3;
+      
+      wordMod = -1;
+      if(modifiers[y][x] == '2W')
+        wordMod = 2;
+      if(modifiers[y][x] == '3W')
+        wordMod = 3;
+
+      if(wordMod != -1)
+      { 
+        cons1 = getConnectedTileCoords({x:x,y:y});
+        cons2 = tempTileLocs;
+
+        for (let c = 0; c < cons1.length; c++) {
+          const con = cons1[c];
+          tempModifiers[con.y][con.x] *= wordMod;
+        }
+
+        for (let c = 0; c < cons2.length; c++) {
+          const con = cons2[c];
+          if(con != null)
+            tempModifiers[con.y][con.x] *= wordMod;
+        }
+      }
+
+    }
+  }
+
+  for(var i = 0; i < 15; i++)
+  {
+    for(var j = 0; j < 15; j++)
+    {
+      letter = boardTemp[i][j]
+      if(letter != '')
+        _score += tilePoints[letter]*tempModifiers[i][j];
+    }
+  }
+  return _score;
+}
 
 function isValidPlay()
 {
   // Getting relative locations to check for grouping
   var locs = []
+  
+  var constCoord = -1;
+  variableAxis = ""
+  constantAxis = "";
+  if(isVertical){
+    variableAxis = "y"
+    constantAxis = "x";
+  } else{
+    variableAxis = "x"
+    constantAxis = "y";
+  }
+
+
   for (let i = 0; i < tempTileLocs.length; i++) {
     if(tempTileLocs[i])
     {
-      if(isVertical)
-        locs.push(tempTileLocs[i].y);
-      else
-        locs.push(tempTileLocs[i].x);
+      var constCoord = tempTileLocs[i][constantAxis];
+      locs.push(tempTileLocs[i][variableAxis]);
     }
   }
   console.log("LOCS: ", locs);
+  console.log("isVertical: ", isVertical);
+  console.log("constantAxis: ", constantAxis);
+  console.log("constantAxis: ", constantAxis);
   
   // Checking for grouping
   locs.sort(function(a, b){return a-b});
   console.log("LOCS-S: ", locs);
 
-  num = locs[0];
   var isGrouped = true;
-  for (let i = 0; i < locs.length && isGrouped; i++) {
-    if(num != locs[i])
-      isGrouped = false;
-    num++;
+  for (let i = locs[0]; i < locs[locs.length-1] && isGrouped; i++) {
+      if(isVertical){
+        if(board[i][constCoord] == '' && boardTemp[i][constCoord] == '')
+          isGrouped = false;
+      } else {
+        if(board[constCoord][i] == '' && boardTemp[constCoord][i] == '')
+          isGrouped = false;
+      }
   }
   if(!isGrouped)
     return false;
@@ -244,9 +426,9 @@ function isValidPlay()
           notConnected = false;
         if(board[t.y][t.x+1] && board[t.y][t.x+1] != '')
           notConnected = false;
-        if(board[t.y-1][t.x] && board[t.y-1][t.x] != '')
+        if(board[t.y-1] && board[t.y-1][t.x] && board[t.y-1][t.x] != '')
           notConnected = false;
-        if(board[t.y+1][t.x] && board[t.y+1][t.x] != '')
+        if(board[t.y+1] && board[t.y+1][t.x] && board[t.y+1][t.x] != '')
           notConnected = false;
       }
   }
@@ -323,12 +505,19 @@ playButton.addEventListener("mousedown", function (evt) {
     // Updating board with deep copy every time a play is made
     if(!isValidPlay())
     {
-      console.log("Invalid play");
+      // console.log("Invalid play");
       return;
     }
 
+
+    // console.log("Valid play");
+
+    // TEMPORARY
+    playerScores[playerID] += score();
+    playerID = (playerID+1)%playerNum;
+
+    // reseting temp tile locations
     tempTileLocs = [null,null,null,null,null,null,null];
-    console.log("Valid play");
 
     board = [];
     boardTemp.forEach(element => {
@@ -484,6 +673,9 @@ function renderHand()
 }
 function renderBoard()
 {
+  // $("#playerText").style.top = 100;
+  // $("#playerText").style.left = 800;
+  
   boardImage = new Image();
   boardImage.src = "img/EmptyBoard.png";
   boardImage.onload = function() {
