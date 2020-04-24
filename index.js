@@ -12,6 +12,7 @@ const production = false;
 
 app.use(express.static(path.join(__dirname, "./static")));
 
+
 // Setting up multiplayer variables
 board = [
   ['','','','','','','','','','','','','','',''],
@@ -29,6 +30,35 @@ board = [
   ['','','','','','','','','','','','','','',''],
   ['','','','','','','','','','','','','','',''],
   ['','','','','','','','','','','','','','','']
+];
+tileBag = [
+  'A','A','A','A','A','A','A','A','A',
+  'B','B',
+  'C','C',
+  'D','D','D','D',
+  'E','E','E','E','E','E','E','E','E','E','E','E',
+  'F','F',
+  'G','G','G',
+  'H','H',
+  'I','I','I','I','I','I','I','I','I',
+  'J',
+  'K',
+  'L','L','L','L',
+  'M','M',
+  'N','N','N','N','N','N',
+  'O','O','O','O','O','O','O','O',
+  'P','P',
+  'Q',
+  'R','R','R','R','R','R',
+  'S','S','S','S',
+  'T','T','T','T','T','T',
+  'U','U','U','U',
+  'V','V',
+  'W','W',
+  'X',
+  'Y','Y',
+  'Z',
+  '_blank', '_blank'
 ];
 
 turnNum = 0
@@ -61,8 +91,27 @@ io.on("connection", function (socket) {
     
     turnNum = (turnNum+1)%(playerNum+1);
     playerScores = msg.playerScores;
-
+    // Getting new tiles
     io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
+  });
+
+  socket.on("requestTiles", function(msg){
+    // Replacing tiles
+    drawNum = msg
+    tiles = [];
+    for (let i = 0; i < drawNum; i++) {
+      var tile = tileBag[Math.floor(Math.random()* tileBag.length)];
+      const ind = tileBag.indexOf(tile);
+      if (ind != -1) {
+          tileBag.splice(ind, 1);
+      }
+      tiles.push(tile);
+    }
+    socket.emit("receiveTiles", tiles);
+  });
+
+  socket.on("draw", function(msg){
+    msg.placedNum
   });
 
   playerNum++;

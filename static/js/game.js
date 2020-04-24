@@ -11,35 +11,7 @@
 var socket = io();
 
 tempTileLocs = [null,null,null,null,null,null,null];
-var tileBag = [
-  'A','A','A','A','A','A','A','A','A',
-  'B','B',
-  'C','C',
-  'D','D','D','D',
-  'E','E','E','E','E','E','E','E','E','E','E','E',
-  'F','F',
-  'G','G','G',
-  'H','H',
-  'I','I','I','I','I','I','I','I','I',
-  'J',
-  'K',
-  'L','L','L','L',
-  'M','M',
-  'N','N','N','N','N','N',
-  'O','O','O','O','O','O','O','O',
-  'P','P',
-  'Q',
-  'R','R','R','R','R','R',
-  'S','S','S','S',
-  'T','T','T','T','T','T',
-  'U','U','U','U',
-  'V','V',
-  'W','W',
-  'X',
-  'Y','Y',
-  'Z',
-  '_blank', '_blank'
-];
+
 // Stores the points per tile
 var tilePoints = {
   A: 1,
@@ -73,6 +45,35 @@ var tilePoints = {
 var letters = [
   'A','B','C','D','E','F','G','H','I','J','K','L','M','N',
   'O','P','Q','R','S','T','U','V','W','X','Y','Z', "_blank"
+];
+tileBag = [
+  'A','A','A','A','A','A','A','A','A',
+  'B','B',
+  'C','C',
+  'D','D','D','D',
+  'E','E','E','E','E','E','E','E','E','E','E','E',
+  'F','F',
+  'G','G','G',
+  'H','H',
+  'I','I','I','I','I','I','I','I','I',
+  'J',
+  'K',
+  'L','L','L','L',
+  'M','M',
+  'N','N','N','N','N','N',
+  'O','O','O','O','O','O','O','O',
+  'P','P',
+  'Q',
+  'R','R','R','R','R','R',
+  'S','S','S','S',
+  'T','T','T','T','T','T',
+  'U','U','U','U',
+  'V','V',
+  'W','W',
+  'X',
+  'Y','Y',
+  'Z',
+  '_blank', '_blank'
 ];
 
 // Loading tile images and values
@@ -162,6 +163,19 @@ var lastRow = -1
 var isVertical;
 var placedNum = 0;
 var removal = { x: -1, y:-1};
+
+socket.on("receiveTiles", function(tiles){
+  console.log("REPLACING TILES");
+  console.log("hand ", hand);
+  console.log("tiles ", tiles);
+  num = 0
+  for (let i = 0; i < hand.length && tiles[num]; i++) {
+    if(hand[i] == '')
+      hand[i] = tiles[num++];
+  }
+  console.log("hand ", hand);
+  renderHand();
+});
 
 socket.on("updateVars", function (msg) {
   boardTemp = msg.board;
@@ -515,7 +529,7 @@ playButton.addEventListener("mousedown", function (evt) {
 
 
     playerScores[playerID] += score();
-
+    
           // --- TEMPORARY ---
     // playerID = (playerID+1)%playerNum;
           // --- TEMPORARY ---
@@ -529,9 +543,9 @@ playButton.addEventListener("mousedown", function (evt) {
     });
     console.log("Emitting board with (board:"+board+")");
     
-    socket.emit("play", {playerScores:playerScores, board:board})
+    socket.emit("play", {playerScores:playerScores, board:board, placedNum:placedNum})
 
-    draw();
+    socket.emit("requestTiles", placedNum);
     selected = "";
     selectedNum = -1;
     placedNum = 0;
@@ -706,30 +720,30 @@ function renderBoard()
 }
 
 
-// Game based functions -----------------------------------
-function draw() {
-  // drawing tiles to fill hand
-  for(var i = 0; i < hand.length; i++) {
-      if(hand[i] == '')
-          hand[i] = pullTile()
-      if(!hand[i])
-          hand[i] = ""
-  }
-  renderHand();
-}
+// // Game based functions -----------------------------------
+// function draw() {
+//   // drawing tiles to fill hand
+//   for(var i = 0; i < hand.length; i++) {
+//       if(hand[i] == '')
+//           hand[i] = pullTile()
+//       if(!hand[i])
+//           hand[i] = ""
+//   }
+//   renderHand();
+// }
 
-function pullTile()
-{
-  var tile = tileBag[Math.floor(Math.random()* tileBag.length)];
-  const ind = tileBag.indexOf(tile);
-  if (ind != -1) {
-      tileBag.splice(ind, 1);
-  }
-  return tile;
-}
+// function pullTile()
+// {
+//   var tile = tileBag[Math.floor(Math.random()* tileBag.length)];
+//   const ind = tileBag.indexOf(tile);
+//   if (ind != -1) {
+//       tileBag.splice(ind, 1);
+//   }
+//   return tile;
+// }
 //----------------------------------------------------------------------
 
 // Renders hand initially
-draw();
+socket.emit("requestTiles", 7);
 renderHand();
 renderBoard();
