@@ -207,11 +207,11 @@ canvas.addEventListener("mousedown", function (evt) {
   }
 });
 
-function getConnectedTileCoords(coords){
+function getConnectedTileCoords(_board, coords){
   ret = []
   // Checking to the right
   walkerX = coords.x+1;
-  while(board[coords.y][walkerX] && board[coords.y][walkerX] != '')
+  while(_board[coords.y][walkerX] && _board[coords.y][walkerX] != '')
   {
     ret.push({x:walkerX, y:coords.y});
     walkerX++;
@@ -219,7 +219,7 @@ function getConnectedTileCoords(coords){
 
   // Checking to the left
   walkerX = coords.x-1;
-  while(board[coords.y][walkerX] && board[coords.y][walkerX] != '')
+  while(_board[coords.y][walkerX] && _board[coords.y][walkerX] != '')
   {
     ret.push({x:walkerX, y:coords.y});
     walkerX--;
@@ -227,7 +227,7 @@ function getConnectedTileCoords(coords){
 
   // Checking below
   walkerY = coords.y+1;
-  while(board[walkerY] && board[walkerY][coords.x] != '')
+  while(_board[walkerY] && _board[walkerY][coords.x] != '')
   {
     ret.push({x:coords.x, y:walkerY});
     walkerY++;
@@ -235,7 +235,7 @@ function getConnectedTileCoords(coords){
 
   // Checking above
   walkerY = coords.y-1;
-  while(board[walkerY] && board[walkerY][coords.x] != '')
+  while(_board[walkerY] && _board[walkerY][coords.x] != '')
   {
     ret.push({x:coords.x, y:walkerY});
     walkerY--;
@@ -305,10 +305,8 @@ function score(){
 
 
 
-      // console.log("OUT Channging tempModifiers["+y+"]["+x+"] = 1");
 
-      cons = getConnectedTileCoords({x:x, y:y});
-      // console.log("cons :: ", cons);
+      cons = getConnectedTileCoords(board, {x:x, y:y});
       
       // Changing connected tiles temp modifier value
       for(var j = 0; j < cons.length; j++){
@@ -335,9 +333,11 @@ function score(){
       if(modifiers[y][x] == '3W')
         wordMod = 3;
 
+      
       if(wordMod != -1)
       { 
-        cons1 = getConnectedTileCoords({x:x,y:y});
+        tempModifiers[y][x] *= wordMod;
+        cons1 = getConnectedTileCoords(boardTemp, {x:x,y:y});
         cons2 = tempTileLocs;
 
         for (let c = 0; c < cons1.length; c++) {
@@ -345,11 +345,6 @@ function score(){
           tempModifiers[con.y][con.x] *= wordMod;
         }
 
-        for (let c = 0; c < cons2.length; c++) {
-          const con = cons2[c];
-          if(con != null)
-            tempModifiers[con.y][con.x] *= wordMod;
-        }
       }
 
     }
