@@ -12,6 +12,31 @@ const production = false;
 
 app.use(express.static(path.join(__dirname, "./static")));
 
+// Setting up multiplayer variables
+board = [
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','',''],
+  ['','','','','','','','','','','','','','','']
+];
+
+turnNum = 0
+playerNum = -1;
+playerScores = []
+maxPlayerNum = -1;
+for(var i = 0; i < playerNum; i++)
+  playerScores.push(0);
 
 var clients = new Map();
 var clientId = 0;
@@ -23,30 +48,41 @@ function aKey(aSocket) {
 
 io.on("connection", function (socket) {
   // remember this socket id
-  console.log("connection: " + socket.id + " clientId: " + clientId + " key: " + aKey);
+  console.log("connection: " + socket.id + " clientId: " + clientId + " key: " + aKey + " New Player: " + playerNum);
+  
+  socket.on("print", function (msg) { 
+    console.log(msg);
+  });
 
-  clientId += 1;
-  var aKey = socket.id;
-  if(clientId < 5)
-  {
-    clients.set(aKey, { id: clientId });
-    io.emit("welcome", { id: clientId });
+  socket.on("play", function (msg) { 
+    // console.log("this is a test, ln 38 index.js");
+    board = msg.board;
+    console.log(board);
     
-    socket.on("chat", function (msg) {
-      // var info = clients.get(socket.handshake.address);
-      var info = clients.get(socket.id);
+    turnNum = (turnNum+1)%(playerNum+1);
+    playerScores = msg.playerScores;
 
-      io.emit("chat", { from: info.id, text: msg.text }); // io.emit sends to all
-      console.log("chat received from " + info.id + " - " + msg.text);
-    });
+    io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
+  });
 
-    socket.on('disconnect', function() {
-      console.log("disconnect from: " + socket.io + "  ip: " + socket.handshake.address);
-      clientId -= 1; // there is now one less client
-      if(clientId < 0)
-        clientId = 0;
-    });
+  playerNum++;
+  if(playerNum > maxPlayerNum)
+  {
+    console.log("adding new score slot");
+    
+    maxPlayerNum = playerNum;
+    playerScores.push(0);
   }
+  io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
+
+  var aKey = socket.id;
+  clients.set(aKey, { id: playerNum });
+
+  socket.on('disconnect', function() {
+    console.log("disconnect from: " + socket.io + "  ip: " + socket.handshake.address);
+    playerNum--;
+  });
+
 });
 
 http.listen(port, function () {

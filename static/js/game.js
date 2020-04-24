@@ -1,12 +1,14 @@
 // TODO:
-//  Add validate play function that runs on playbutton mousedown. 
-//  Add tempTileLocs array to help with this.
+//  Add validate play function that runs on playbutton mousedown.  DONE
+//  Add tempTileLocs array to help with this. DONE
 //  
-//  Create score play function
+//  Create score play function DONE
 // 
-//  implement multiplayer
+//  implement multiplayer WOKRING ON IT
 
 //  Setting Up Major game variables -----------------------------------------
+
+var socket = io();
 
 tempTileLocs = [null,null,null,null,null,null,null];
 var tileBag = [
@@ -144,14 +146,15 @@ var hand = ['','','','','','',''];
 // ------------------------------------------------------------------------------------
 
 // Setting up lesser variables ----------------------------
-turnNum = 0
-playerID = 0;
-playerNum = 3;
 
-playerScores = []
-for(var i = 0; i < playerNum; i++)
-  playerScores.push(0);
+// Multiplayer variables
+var turnNum = -1;
+var playerID = -1;
+var playerNum = -1;
+var playerScores = -1;
 
+
+// Local variables
 var selected = "";
 var selectedNum = -1;
 var lastCol = -1
@@ -160,6 +163,27 @@ var isVertical;
 var placedNum = 0;
 var removal = { x: -1, y:-1};
 
+socket.on("updateVars", function (msg) {
+  boardTemp = msg.board;
+  board = [];
+  boardTemp.forEach(element => {
+    board.push([...element])
+  });
+  console.log("board", board);
+  
+  console.log(msg);  
+  turnNum = msg.turnNum;
+  if(playerID == -1)
+    playerID = msg.playerNum;
+  playerNum = msg.playerNum;
+  playerScores = msg.playerScores;
+  selected = "";
+  selectedNum = -1;
+  placedNum = 0;
+  lastCol = -1;
+  lastRow = -1;
+  renderBoard();
+});
 
 // --------------------------------------------------------
 
@@ -167,9 +191,8 @@ var removal = { x: -1, y:-1};
 //Setting up canvas
 scoreText = $("#scoreText")[0];
 scoreLabel = $("#scoreLabel")[0];
-
+playerLabel= $("#playerLabel")[0];
 var canvas = $("canvas")[0];
-console.log(canvas);
 
 setCanvasSize()
 var ctx = canvas.getContext("2d");
@@ -185,7 +208,6 @@ canvas.addEventListener("mousedown", function (evt) {
         tempTileLocs[i] = null;
         renderHand();
         renderBoard();
-        console.log("placedNum:", placedNum);
         break;
       }
     }
@@ -252,11 +274,9 @@ function score(){
   {
     tempModifiers.push([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]);
   }
-  // console.log("tempTileLocs : ",tempTileLocs);
   
   for(var i = 0; i < 7; i++){
     tileLoc = tempTileLocs[i];
-    // console.log(tileLoc);
     
     if(tileLoc != null)
     {
@@ -359,6 +379,9 @@ function score(){
         _score += tilePoints[letter]*tempModifiers[i][j];
     }
   }
+  if(placedNum == 7)
+    _score += 50;
+    
   return _score;
 }
 
@@ -386,14 +409,8 @@ function isValidPlay()
       locs.push(tempTileLocs[i][variableAxis]);
     }
   }
-  console.log("LOCS: ", locs);
-  console.log("isVertical: ", isVertical);
-  console.log("constantAxis: ", constantAxis);
-  console.log("constantAxis: ", constantAxis);
-  
   // Checking for grouping
   locs.sort(function(a, b){return a-b});
-  console.log("LOCS-S: ", locs);
 
   var isGrouped = true;
   for (let i = locs[0]; i < locs[locs.length-1] && isGrouped; i++) {
@@ -408,8 +425,6 @@ function isValidPlay()
   if(!isGrouped)
     return false;
 
-  console.log("Is grouped");
-
   // Checking for adjacency of already played tiles.
   var notConnected = true;
   for (let i = 0; i < tempTileLocs.length && notConnected; i++) {
@@ -419,7 +434,6 @@ function isValidPlay()
       // If any of the tiles are played on the middle cell
       if(t.x == 7 && t.y == 7)
       {
-        console.log("is first play");
         return true;
       }
         if(board[t.y][t.x-1] && board[t.y][t.x-1] != '')
@@ -432,10 +446,6 @@ function isValidPlay()
           notConnected = false;
       }
   }
-  if(!notConnected)
-    console.log("Connected");
-  else
-    console.log("notConnected"); 
 
   return !notConnected;
 }
@@ -444,15 +454,12 @@ canvas.addEventListener("mousemove", function (evt) {
   // If mouse is over board
   if(coords.x <= 14 && coords.y <= 14 && coords.x >= 0 && coords.y >= 0)
   {
-    // console.log("over board");
     
     // If it is hovering over a tile this person placed but has not yet played...
     if(board[coords.y][coords.x] != boardTemp[coords.y][coords.x])
     {
-      // console.log("your tile");
       removal.x = coords.x;
       removal.y = coords.y;
-      // console.log("move ",removal)
       return;
     }
   }
@@ -484,15 +491,19 @@ tileButtons[4].addEventListener("mousedown", function (evt) { tileClick(4)});
 tileButtons[5].addEventListener("mousedown", function (evt) { tileClick(5)});
 tileButtons[6].addEventListener("mousedown", function (evt) { tileClick(6)});
 
-canvas.addEventListener("mouseup", function (evt) {
-  console.log("up");
-});
+// canvas.addEventListener("mouseup", function (evt) {
+//   console.log("up");
+// });
 
 // Selects the approprite tile once clicked
 function tileClick(tileNum){
-    selected = hand[tileNum];
-    selectedNum = tileNum;
-    renderHand();
+    // Can only select tiles when its the persons turn
+    if(turnNum == playerID)
+    {
+      selected = hand[tileNum];
+      selectedNum = tileNum;
+      renderHand();
+    }
 }
 
 // Setting up play button
@@ -505,18 +516,14 @@ playButton.addEventListener("mousedown", function (evt) {
     // Updating board with deep copy every time a play is made
     if(!isValidPlay())
     {
-      // console.log("Invalid play");
       return;
     }
 
 
-    // console.log("Valid play");
-
     playerScores[playerID] += score();
-    $("#scoreText").text(playerScores);
 
           // --- TEMPORARY ---
-    playerID = (playerID+1)%playerNum;
+    // playerID = (playerID+1)%playerNum;
           // --- TEMPORARY ---
 
     // reseting temp tile locations
@@ -526,6 +533,9 @@ playButton.addEventListener("mousedown", function (evt) {
     boardTemp.forEach(element => {
       board.push([...element])
     });
+    console.log("Emitting board with (board:"+board+")");
+    
+    socket.emit("play", {playerScores:playerScores, board:board})
 
     draw();
     selected = "";
@@ -533,7 +543,6 @@ playButton.addEventListener("mousedown", function (evt) {
     placedNum = 0;
     lastCol = -1;
     lastRow = -1;
-    turnNum = (turnNum+1)%playerNum;
     renderBoard()    
 });
 // -------------------------------------------------------
@@ -541,7 +550,6 @@ playButton.addEventListener("mousedown", function (evt) {
 // GUI functions ----------------------------------------------
 function placeImage(imageName, x,y, sizex,sizey)
 {
-    console.log("Placing: ", imageName);
     im = new Image();
     im.src = imageName;
     im.onload = function(){
@@ -588,17 +596,11 @@ function getMouseGridNum(evt)
 
 function place(coords, tileVal)
 {
-    console.log({v:isVertical, lc:lastCol, lr:lastRow});
     if(canPlace(coords))
     {   
         tempTileLocs[selectedNum] = coords;
-
-        console.log("placing");
-        console.log("board[0][0]", board[0][0]);
-
         boardTemp[coords.y][coords.x] = tileVal;
-        console.log("board[0][0]", board[0][0]);
-
+        
         placedNum++;
         renderBoard()
         hand[selectedNum] = "";
@@ -612,20 +614,14 @@ function place(coords, tileVal)
 function canPlace(coords)
 {
     if(gridNum.x < 0 || gridNum.x > 14 || gridNum.y < 0 || gridNum.y > 14)
-    {
-        console.log("Tile out of range")
         return false;
-    }
 
     if(boardTemp[coords.y][coords.x] == "")
-    {
-        console.log("Loc is empty");
-        
+    {        
         if( placedNum == 0)
         {
             lastRow = coords.y;
             lastCol = coords.x;
-            console.log("placedNum == 0");
             return true;
         }
         if(placedNum == 1)
@@ -676,10 +672,14 @@ function renderHand()
 }
 function renderBoard()
 {
-  scoreText.style.top = "80px";
-  scoreText.style.left = "800px";
-  scoreLabel.style.top = "80px";
-  scoreLabel.style.left = "700px";
+  scoreText.style.top    = "80px";
+  scoreText.style.left   = "800px";
+  scoreLabel.style.top   = "80px";
+  scoreLabel.style.left  = "700px";
+  playerLabel.style.top  = "30px"
+  playerLabel.style.left = "750px"
+  $("#playerLabel").text("You are player "+playerID);
+  $("#scoreText").text(playerScores);
 
   boardImage = new Image();
   boardImage.src = "img/EmptyBoard.png";
@@ -697,6 +697,8 @@ function renderBoard()
         {
             if(boardTemp[i][x] != '')
             {
+                // console.log("placing "+boardTemp);
+                
                 xCoord = offsetX+tileSize*x;
                 yCoord = offsetY+tileSize*i;
                 if(boardTemp[i][x] == board[i][x])
