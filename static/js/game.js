@@ -175,6 +175,7 @@ socket.on("updateVars", function (msg) {
   turnNum = msg.turnNum;
   if(playerID == -1)
     playerID = msg.playerNum;
+
   playerNum = msg.playerNum;
   playerScores = msg.playerScores;
   selected = "";
@@ -184,7 +185,6 @@ socket.on("updateVars", function (msg) {
   lastRow = -1;
   renderBoard();
 });
-
 // --------------------------------------------------------
 
 // Setting up board board GUI ------------------
@@ -294,22 +294,22 @@ function score(){
             double = true
         }
         if(isVertical == false) {
-          if(boardTemp[y-1][x] && boardTemp[y-1][x] != '')
+          if(boardTemp[y-1] && boardTemp[y-1][x] && boardTemp[y-1][x] != '')
             double = true
-          if(boardTemp[y+1][x] && boardTemp[y+1][x] != '')
+          if(boardTemp[y+1] && boardTemp[y+1][x] && boardTemp[y+1][x] != '')
             double = true
         }
       if(placedNum == 1)
       {
         hasHorizontal = false;
         hasVertical = false;
-        if(boardTemp[y-1][x] && boardTemp[y-1][x] != '')
+        if(boardTemp[y-1] && boardTemp[y-1][x] && boardTemp[y-1][x] != '')
           hasVertical = true        
-        if(boardTemp[y+1][x] && boardTemp[y+1][x] != '')
+        if(boardTemp[y+1] && boardTemp[y+1][x] && boardTemp[y+1][x] != '')
           hasVertical = true        
-        if(boardTemp[y][x-1] && boardTemp[y][x-1] != '')
+        if(boardTemp[y]   && boardTemp[y][x-1] && boardTemp[y][x-1] != '')
           hasHorizontal = true;
-        if(boardTemp[y][x+1] && boardTemp[y][x+1] != '')
+        if(boardTemp[y]   && boardTemp[y][x+1] && boardTemp[y][x+1] != '')
           hasHorizontal = true;
 
         double = hasHorizontal&& hasVertical;
@@ -322,9 +322,6 @@ function score(){
 
       if(double)
         _score += tilePoints[boardTemp[y][x]]*soloMult;
-
-
-
 
       cons = getConnectedTileCoords(board, {x:x, y:y});
       
@@ -364,9 +361,7 @@ function score(){
           const con = cons1[c];
           tempModifiers[con.y][con.x] *= wordMod;
         }
-
       }
-
     }
   }
 
@@ -378,10 +373,11 @@ function score(){
       if(letter != '')
         _score += tilePoints[letter]*tempModifiers[i][j];
     }
+    
   }
   if(placedNum == 7)
     _score += 50;
-    
+
   return _score;
 }
 
@@ -389,7 +385,6 @@ function isValidPlay()
 {
   // Getting relative locations to check for grouping
   var locs = []
-  
   var constCoord = -1;
   variableAxis = ""
   constantAxis = "";
@@ -400,7 +395,6 @@ function isValidPlay()
     variableAxis = "x"
     constantAxis = "y";
   }
-
 
   for (let i = 0; i < tempTileLocs.length; i++) {
     if(tempTileLocs[i])
