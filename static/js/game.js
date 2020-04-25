@@ -397,7 +397,7 @@ function score(){
   return _score;
 }
 
-function GetAdjustedCoord(axis, coord)
+function getAdjstedCoord(axis, coord)
 {
   if(axis == "x")
     return (coord/1280)*WIDTH;
@@ -490,17 +490,6 @@ refreshScreen();
 tileButtons = []
 for (var i = 0; i < 7; i++) {
     tileButtons.push($("#tile"+i)[0]);
-    // Changing button size/positions
-    handX = GetAdjustedCoord("x", 725);
-    handY = GetAdjustedCoord("y", 625);
-    tileSizeX = GetAdjustedCoord("x", 65);
-    tileSizeY = GetAdjustedCoord("y", 65);
-    margin = GetAdjustedCoord("x", 5);
-
-    tileButtons[i].style.left   = (handX+tileSizeX*i + margin*i) + "px";
-    tileButtons[i].style.top    = handY + "px";
-    tileButtons[i].style.width  = tileSizeX + "px";
-    tileButtons[i].style.height = tileSizeY + "px";
 }
 
 tileButtons[0].addEventListener("mousedown", function (evt) { tileClick(0)});
@@ -528,12 +517,38 @@ function tileClick(tileNum){
 
 // Setting up play button
 playButton = document.getElementById("playButton");
-playButton.style.top = GetAdjustedCoord("y", 515)+"px"
-playButton.style.left = GetAdjustedCoord("x", 750)+"px"
-playButton.style.width = GetAdjustedCoord("x", 168)+"px"
-playButton.style.height = GetAdjustedCoord("y", 70)+"px"
 
 
+function setGUICoords()
+{
+  // Changing tileButton size/positions
+  for (var i = 0; i < 7; i++) {
+    handX = getAdjstedCoord("x", 725);
+    handY = getAdjstedCoord("y", 625);
+    tileSizeX = getAdjstedCoord("x", 65);
+    tileSizeY = getAdjstedCoord("y", 65);
+    margin = getAdjstedCoord("x", 5);
+
+    tileButtons[i].style.left   = (handX+tileSizeX*i + margin*i) + "px";
+    tileButtons[i].style.top    = handY + "px";
+    tileButtons[i].style.width  = tileSizeX + "px";
+    tileButtons[i].style.height = tileSizeY + "px";
+  }
+
+  // and the playButton
+  playButton.style.top    = getAdjstedCoord("y", 515)+"px";
+  playButton.style.left   = getAdjstedCoord("x", 750)+"px";
+  playButton.style.width  = getAdjstedCoord("x", 168)+"px";
+  playButton.style.height = getAdjstedCoord("y", 70)+"px";
+
+  // and the text
+  scoreText.style.top    = getAdjstedCoord("y", 80)+"px";
+  scoreText.style.left   = getAdjstedCoord("x", 800)+"px";
+  scoreLabel.style.top   = getAdjstedCoord("y", 80)+"px";
+  scoreLabel.style.left  = getAdjstedCoord("x", 700)+"px"
+  playerLabel.style.top  = getAdjstedCoord("y", 30)+"px";
+  playerLabel.style.left = getAdjstedCoord("x", 750)+"px";
+}
 
 
 playButton.addEventListener("mousedown", function (evt) {
@@ -543,12 +558,7 @@ playButton.addEventListener("mousedown", function (evt) {
       return;
     }
 
-
     playerScores[playerID] += score();
-    
-          // --- TEMPORARY ---
-    // playerID = (playerID+1)%playerNum;
-          // --- TEMPORARY ---
 
     // reseting temp tile locations
     tempTileLocs = [null,null,null,null,null,null,null];
@@ -607,13 +617,13 @@ function getMousePosition(canvas, evt) {
 function getMouseGridNum(evt)
 {
     pos = getMousePosition(canvas, evt);
-    offsetX = GetAdjustedCoord("x",43);
-    offsetY = GetAdjustedCoord("y",43);
+    offsetX = getAdjstedCoord("x",43);
+    offsetY = getAdjstedCoord("y",43);
     pos.x -= offsetX;
     pos.y -= offsetY;
 
-    tileSizeX = GetAdjustedCoord("x",42.3);
-    tileSizeY = GetAdjustedCoord("y",42.7);
+    tileSizeX = getAdjstedCoord("x",42.3);
+    tileSizeY = getAdjstedCoord("y",42.7);
     return {
         x: Math.floor(pos.x/tileSizeX),
         y: Math.floor(pos.y/tileSizeY)
@@ -698,13 +708,7 @@ function renderHand()
 }
 function renderBoard()
 {
-  scoreText.style.top    = GetAdjustedCoord("y", 80)+"px";
-  scoreText.style.left   = GetAdjustedCoord("x", 800)+"px";
-  scoreLabel.style.top   = GetAdjustedCoord("y", 80)+"px";
-  scoreLabel.style.left  = GetAdjustedCoord("x", 700)+"px"
-  playerLabel.style.top  = GetAdjustedCoord("y", 30)+"px";
-  playerLabel.style.left = GetAdjustedCoord("x", 750)+"px"
-
+  setGUICoords();
 
   $("#playerLabel").text("You are player "+playerID);
   $("#scoreText").text(playerScores);
@@ -713,14 +717,14 @@ function renderBoard()
   boardImage.src = "img/EmptyBoard.png";
   boardImage.onload = function() {
     ctx.drawImage(boardImage,0,0,canvas.width,canvas.height);
-     
-    offsetX = GetAdjustedCoord("x", 43);
-    offsetY = GetAdjustedCoord("y", 43);
+    
+    offsetX = getAdjstedCoord("x", 43);
+    offsetY = getAdjstedCoord("y", 43);
     paddingX = 0;
     paddingY = 0;
-    tileSizeX = GetAdjustedCoord("x", 42.3);
-    tileSizeY = GetAdjustedCoord("y", 42.3);
-    ysizeMod = GetAdjustedCoord("y",0.4);
+    tileSizeX = getAdjstedCoord("x", 42.3);
+    tileSizeY = getAdjstedCoord("y", 42.3);
+    ysizeMod = getAdjstedCoord("y",0.4);
     for(var i = 0; i < 15; i++)
     {
         for(var x = 0; x < 15; x++)
@@ -765,6 +769,12 @@ function renderBoard()
 // }
 //----------------------------------------------------------------------
 
+window.addEventListener("resize", function(){
+  setCanvasSize();
+  renderBoard();
+  renderHand();
+  setGUICoords();
+});
 // Renders hand initially
 socket.emit("requestTiles", 7);
 renderHand();
