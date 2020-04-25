@@ -1,15 +1,5 @@
-// TODO:
-//  Add validate play function that runs on playbutton mousedown.  DONE
-//  Add tempTileLocs array to help with this. DONE
-//  
-//  Create score play function DONE
-// 
-//  implement multiplayer WOKRING ON IT
-
 //  Setting Up Major game variables -----------------------------------------
-
 var socket = io();
-
 tempTileLocs = [null,null,null,null,null,null,null];
 
 // Stores the points per tile
@@ -45,35 +35,6 @@ var tilePoints = {
 var letters = [
   'A','B','C','D','E','F','G','H','I','J','K','L','M','N',
   'O','P','Q','R','S','T','U','V','W','X','Y','Z', "_blank"
-];
-tileBag = [
-  'A','A','A','A','A','A','A','A','A',
-  'B','B',
-  'C','C',
-  'D','D','D','D',
-  'E','E','E','E','E','E','E','E','E','E','E','E',
-  'F','F',
-  'G','G','G',
-  'H','H',
-  'I','I','I','I','I','I','I','I','I',
-  'J',
-  'K',
-  'L','L','L','L',
-  'M','M',
-  'N','N','N','N','N','N',
-  'O','O','O','O','O','O','O','O',
-  'P','P',
-  'Q',
-  'R','R','R','R','R','R',
-  'S','S','S','S',
-  'T','T','T','T','T','T',
-  'U','U','U','U',
-  'V','V',
-  'W','W',
-  'X',
-  'Y','Y',
-  'Z',
-  '_blank', '_blank'
 ];
 
 // Loading tile images and values
@@ -154,7 +115,6 @@ var playerID = -1;
 var playerNum = -1;
 var playerScores = -1;
 
-
 // Local variables
 var selected = "";
 var selectedNum = -1;
@@ -164,26 +124,24 @@ var isVertical;
 var placedNum = 0;
 var removal = { x: -1, y:-1};
 
+// This calls when you emit "requestTiles". the server 
+//  sends you the requested number of tiles
 socket.on("receiveTiles", function(tiles){
-  console.log("REPLACING TILES");
-  console.log("hand ", hand);
-  console.log("tiles ", tiles);
   num = 0
   for (let i = 0; i < hand.length && tiles[num]; i++) {
     if(hand[i] == '')
       hand[i] = tiles[num++];
   }
-  console.log("hand ", hand);
   renderHand();
 });
 
+// Comes from the server to update local variables
 socket.on("updateVars", function (msg) {
   boardTemp = msg.board;
   board = [];
   boardTemp.forEach(element => {
     board.push([...element])
   });
-  console.log("board", board);
   
   console.log(msg);  
   turnNum = msg.turnNum;
@@ -204,8 +162,7 @@ socket.on("updateVars", function (msg) {
 // Setting up board board GUI ------------------
 //Setting up canvas
 scoreText = $("#scoreText")[0];
-scoreLabel = $("#scoreLabel")[0];
-playerLabel= $("#playerLabel")[0];
+playerLabel = $("#playerLabel")[0];
 var canvas = $("canvas")[0];
 WIDTH = -1;
 HEIGHT = -1;
@@ -516,10 +473,11 @@ function tileClick(tileNum){
 }
 
 // Setting up play button
-playButton = document.getElementById("playButton");
-
-
-function setGUICoords()
+playButton = $("#playButton")[0];
+swapButton = $("#swapButton")[0];
+challengeButton = $("#challengeButton")[0];
+//
+function setupGUI()
 {
   // Changing tileButton size/positions
   for (var i = 0; i < 7; i++) {
@@ -535,19 +493,33 @@ function setGUICoords()
     tileButtons[i].style.height = tileSizeY + "px";
   }
 
-  // and the playButton
-  playButton.style.top    = getAdjstedCoord("y", 515)+"px";
-  playButton.style.left   = getAdjstedCoord("x", 750)+"px";
-  playButton.style.width  = getAdjstedCoord("x", 168)+"px";
-  playButton.style.height = getAdjstedCoord("y", 70)+"px";
+  // and the buttons
+  playButton.style.top    = getAdjstedCoord("y", 512)+"px";
+  playButton.style.left   = getAdjstedCoord("x", 715)+"px";
+  playButton.style.width  = getAdjstedCoord("x", 180)+"px";
+  playButton.style.height = getAdjstedCoord("y", 80)+"px";
+
+  challengeButton.style.top    = getAdjstedCoord("y", 510)+"px";
+  challengeButton.style.left   = getAdjstedCoord("x", 910)+"px";
+  challengeButton.style.width  = getAdjstedCoord("x", 90)+"px";
+  challengeButton.style.height = getAdjstedCoord("y", 40)+"px";
+
+  swapButton.style.top    = getAdjstedCoord("y", 555)+"px";
+  swapButton.style.left   = getAdjstedCoord("x", 915)+"px";
+  swapButton.style.width  = getAdjstedCoord("x", 80)+"px";
+  swapButton.style.height = getAdjstedCoord("y", 35)+"px";
 
   // and the text
   scoreText.style.top    = getAdjstedCoord("y", 80)+"px";
   scoreText.style.left   = getAdjstedCoord("x", 800)+"px";
-  scoreLabel.style.top   = getAdjstedCoord("y", 80)+"px";
-  scoreLabel.style.left  = getAdjstedCoord("x", 700)+"px"
-  playerLabel.style.top  = getAdjstedCoord("y", 30)+"px";
+  scoreText.style.fontSize = "20px"
+  scoreText.style.color = "lightgrey"
+
+  playerLabel.style.top  = getAdjstedCoord("y", 40)+"px";
   playerLabel.style.left = getAdjstedCoord("x", 750)+"px";
+  playerLabel.style.fontSize = "20px"
+  playerLabel.style.color = "lightgrey"
+
 }
 
 
@@ -603,7 +575,7 @@ function setCanvasSize()
 function refreshScreen()
 {
     setCanvasSize();
-    placeImage("img/EmptyBoard.png", 0,0,canvas.width, canvas.height)
+    placeImage("img/Background1.png", 0,0,canvas.width, canvas.height)
 }
 // Gets mouse position in terms of pixels
 function getMousePosition(canvas, evt) {
@@ -708,13 +680,19 @@ function renderHand()
 }
 function renderBoard()
 {
-  setGUICoords();
+  setupGUI();
 
   $("#playerLabel").text("You are player "+playerID);
-  $("#scoreText").text(playerScores);
+
+  // Showing score
+  st = "Scores: "+playerScores;
+  // for (let i = 0; i < playerNum; i++) {
+  //   st = st+"   Player"+i+" "+playerScores[i];
+  // }
+  $("#scoreText").text(st);
 
   boardImage = new Image();
-  boardImage.src = "img/EmptyBoard.png";
+  boardImage.src = "img/Background1.png";
   boardImage.onload = function() {
     ctx.drawImage(boardImage,0,0,canvas.width,canvas.height);
     
@@ -773,7 +751,7 @@ window.addEventListener("resize", function(){
   setCanvasSize();
   renderBoard();
   renderHand();
-  setGUICoords();
+  setupGUI();
 });
 // Renders hand initially
 socket.emit("requestTiles", 7);
