@@ -207,6 +207,8 @@ scoreText = $("#scoreText")[0];
 scoreLabel = $("#scoreLabel")[0];
 playerLabel= $("#playerLabel")[0];
 var canvas = $("canvas")[0];
+WIDTH = -1;
+HEIGHT = -1;
 
 setCanvasSize()
 var ctx = canvas.getContext("2d");
@@ -395,6 +397,14 @@ function score(){
   return _score;
 }
 
+function GetAdjustedCoord(axis, coord)
+{
+  if(axis == "x")
+    return (coord/1280)*WIDTH;
+  if(axis == "y")
+    return (coord/726)*HEIGHT;
+}
+
 function isValidPlay()
 {
   // Getting relative locations to check for grouping
@@ -481,14 +491,16 @@ tileButtons = []
 for (var i = 0; i < 7; i++) {
     tileButtons.push($("#tile"+i)[0]);
     // Changing button size/positions
-    handX = 725
-    handY = 625
-    tileSize = 65
-    margin = 5;
-    tileButtons[i].style.left   = (handX+tileSize*i + margin*i) + "px";
+    handX = GetAdjustedCoord("x", 725);
+    handY = GetAdjustedCoord("y", 625);
+    tileSizeX = GetAdjustedCoord("x", 65);
+    tileSizeY = GetAdjustedCoord("y", 65);
+    margin = GetAdjustedCoord("x", 5);
+
+    tileButtons[i].style.left   = (handX+tileSizeX*i + margin*i) + "px";
     tileButtons[i].style.top    = handY + "px";
-    tileButtons[i].style.width  = tileSize + "px";
-    tileButtons[i].style.height = tileSize + "px";
+    tileButtons[i].style.width  = tileSizeX + "px";
+    tileButtons[i].style.height = tileSizeY + "px";
 }
 
 tileButtons[0].addEventListener("mousedown", function (evt) { tileClick(0)});
@@ -516,10 +528,14 @@ function tileClick(tileNum){
 
 // Setting up play button
 playButton = document.getElementById("playButton");
-playButton.style.top = "515px"
-playButton.style.left = "750px";
-playButton.style.width = "168px";
-playButton.style.height = "70px";
+playButton.style.top = GetAdjustedCoord("y", 515)+"px"
+playButton.style.left = GetAdjustedCoord("x", 750)+"px"
+playButton.style.width = GetAdjustedCoord("x", 168)+"px"
+playButton.style.height = GetAdjustedCoord("y", 70)+"px"
+
+
+
+
 playButton.addEventListener("mousedown", function (evt) {
     // Updating board with deep copy every time a play is made
     if(!isValidPlay())
@@ -570,6 +586,8 @@ function setCanvasSize()
 {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    WIDTH = canvas.width;
+    HEIGHT = canvas.height;
 }
 // Refreshes screen
 function refreshScreen()
@@ -588,17 +606,17 @@ function getMousePosition(canvas, evt) {
 // Gets mouse position in terms of tile placement location on the board
 function getMouseGridNum(evt)
 {
-    pos = getMousePosition(canvas, evt)
-    offset = 43
-    pos.x -= offset
-    pos.y -= offset
+    pos = getMousePosition(canvas, evt);
+    offsetX = GetAdjustedCoord("x",43);
+    offsetY = GetAdjustedCoord("y",43);
+    pos.x -= offsetX;
+    pos.y -= offsetY;
 
-    tileSize = 42.3;
-    ysizeMod = 0.4;
-
+    tileSizeX = GetAdjustedCoord("x",42.3);
+    tileSizeY = GetAdjustedCoord("y",42.7);
     return {
-        x: Math.floor(pos.x/tileSize),
-        y: Math.floor(pos.y/tileSize)
+        x: Math.floor(pos.x/tileSizeX),
+        y: Math.floor(pos.y/tileSizeY)
     };
 }
 
@@ -680,12 +698,14 @@ function renderHand()
 }
 function renderBoard()
 {
-  scoreText.style.top    = "80px";
-  scoreText.style.left   = "800px";
-  scoreLabel.style.top   = "80px";
-  scoreLabel.style.left  = "700px";
-  playerLabel.style.top  = "30px"
-  playerLabel.style.left = "750px"
+  scoreText.style.top    = GetAdjustedCoord("y", 80)+"px";
+  scoreText.style.left   = GetAdjustedCoord("x", 800)+"px";
+  scoreLabel.style.top   = GetAdjustedCoord("y", 80)+"px";
+  scoreLabel.style.left  = GetAdjustedCoord("x", 700)+"px"
+  playerLabel.style.top  = GetAdjustedCoord("y", 30)+"px";
+  playerLabel.style.left = GetAdjustedCoord("x", 750)+"px"
+
+
   $("#playerLabel").text("You are player "+playerID);
   $("#scoreText").text(playerScores);
 
@@ -693,12 +713,14 @@ function renderBoard()
   boardImage.src = "img/EmptyBoard.png";
   boardImage.onload = function() {
     ctx.drawImage(boardImage,0,0,canvas.width,canvas.height);
-    offsetX = 43;
-    offsetY = 43;
+     
+    offsetX = GetAdjustedCoord("x", 43);
+    offsetY = GetAdjustedCoord("y", 43);
     paddingX = 0;
     paddingY = 0;
-    tileSize = 42.3;
-    ysizeMod = 0.4;
+    tileSizeX = GetAdjustedCoord("x", 42.3);
+    tileSizeY = GetAdjustedCoord("y", 42.3);
+    ysizeMod = GetAdjustedCoord("y",0.4);
     for(var i = 0; i < 15; i++)
     {
         for(var x = 0; x < 15; x++)
@@ -707,12 +729,12 @@ function renderBoard()
             {
                 // console.log("placing "+boardTemp);
                 
-                xCoord = offsetX+tileSize*x;
-                yCoord = offsetY+tileSize*i;
+                xCoord = offsetX+tileSizeX*x;
+                yCoord = offsetY+tileSizeY*i;
                 if(boardTemp[i][x] == board[i][x])
-                  ctx.drawImage(tiles[boardTemp[i][x]].img, xCoord, yCoord+ysizeMod*i, tileSize,tileSize+ysizeMod);
+                  ctx.drawImage(tiles[boardTemp[i][x]].img, xCoord, yCoord+ysizeMod*i, tileSizeX,tileSizeY);
                 else
-                  ctx.drawImage(tiles[boardTemp[i][x]].img_selected, xCoord, yCoord+ysizeMod*i, tileSize,tileSize+ysizeMod);
+                  ctx.drawImage(tiles[boardTemp[i][x]].img_selected, xCoord, yCoord+ysizeMod*i, tileSizeX,tileSizeY);
             }
         }
     }

@@ -1,7 +1,15 @@
-// IT325 Spring 2020
-// Brent Reeves
-// socket.io example for 4 clients
-//
+// TODO
+//  Win condition
+//  Challenge Button
+//    (dictionary)
+//  Tile Swap (From bag)
+//  Tile Swap (Within hand)
+//  Drag to place
+//  Accurate graphics regardless of screen size
+//  IP address based identification
+//  Production
+//  Presentation
+
 const express = require("express");
 const path = require("path");
 const app = express();
