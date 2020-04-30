@@ -112,6 +112,19 @@ var hand = ['','','','','','',''];
 // Multiplayer variables
 var turnNum = -1;
 var playerID = -1;
+var isSpectating = false;
+socket.emit("requestID");
+socket.on("receiveID", function(ID) {
+  console.log("getting ID :: "+ID);
+  
+  playerID = ID;
+  if(ID == -1)
+    isSpectating = true;
+  else
+    socket.emit("requestTiles", 7);
+  renderBoard();
+});
+
 var playerNum = -1;
 var playerScores = -1;
 
@@ -135,6 +148,23 @@ socket.on("receiveTiles", function(tiles){
   renderHand();
 });
 
+function toTimeForm(time) {
+  s = ""
+  s += Math.floor(time/60)+":"
+  time %= 60;
+  s += Math.floor(time/10);
+  time %= 10;
+
+  console.log(s + time);
+
+  return s + time;
+}
+
+socket.on("updateTimer", function(time){
+  
+  $("#timerText").text(toTimeForm(time));
+});
+
 // Comes from the server to update local variables
 socket.on("updateVars", function (msg) {
   boardTemp = msg.board;
@@ -145,8 +175,6 @@ socket.on("updateVars", function (msg) {
   
   console.log(msg);  
   turnNum = msg.turnNum;
-  if(playerID == -1)
-    playerID = msg.playerNum;
 
   playerNum = msg.playerNum;
   playerScores = msg.playerScores;
@@ -161,8 +189,7 @@ socket.on("updateVars", function (msg) {
 
 // Setting up board board GUI ------------------
 //Setting up canvas
-scoreText = $("#scoreText")[0];
-playerLabel = $("#playerLabel")[0];
+spectatingLabel = $("#spectatingLabel")[0];
 var canvas = $("canvas")[0];
 WIDTH = -1;
 HEIGHT = -1;
@@ -170,6 +197,10 @@ HEIGHT = -1;
 setCanvasSize()
 var ctx = canvas.getContext("2d");
 canvas.addEventListener("mousedown", function (evt) {
+  // Do nothing if player is spectator
+  if(isSpectating)
+    return;
+
   // Removing already placed tile
   if(removal.x != -1 && removal.y != -1)
   {
@@ -509,21 +540,61 @@ function setupGUI()
   swapButton.style.width  = getAdjstedCoord("x", 80)+"px";
   swapButton.style.height = getAdjstedCoord("y", 35)+"px";
 
-  // and the text
-  scoreText.style.top    = getAdjstedCoord("y", 80)+"px";
-  scoreText.style.left   = getAdjstedCoord("x", 800)+"px";
-  scoreText.style.fontSize = "20px"
-  scoreText.style.color = "lightgrey"
+  if(isSpectating) {
+    spectatingLabel.style.top  = getAdjstedCoord("y", 30)+"px";
+    spectatingLabel.style.left = getAdjstedCoord("x", 750)+"px";
+    spectatingLabel.style.fontSize = "20px"
+    spectatingLabel.style.color = "lightgrey"
+  }
 
-  playerLabel.style.top  = getAdjstedCoord("y", 40)+"px";
-  playerLabel.style.left = getAdjstedCoord("x", 750)+"px";
-  playerLabel.style.fontSize = "20px"
-  playerLabel.style.color = "lightgrey"
+  for(var i = 0; i < playerScores.length; i++)
+  {
+    $("#playerLabel"+(i+1))[0].style.top  = getAdjstedCoord("y", 138)+"px";
+    $("#playerLabel"+(i+1))[0].style.left = getAdjstedCoord("x", 745+140*i)+"px";
+    $("#playerLabel"+(i+1))[0].style.fontSize = "15px"
+    $("#playerLabel"+(i+1))[0].style.color = "lightgrey"
+    $("#playerLabel"+(i+1)).text("Player "+(i+1));
+
+    $("#scoreText"+(i+1))[0].style.top  = getAdjstedCoord("y", 170)+"px";
+    $("#scoreText"+(i+1))[0].style.left = getAdjstedCoord("x", 760+140*i)+"px";
+    $("#scoreText"+(i+1))[0].style.fontSize = "25px"
+    $("#scoreText"+(i+1))[0].style.color = "lightgrey"
+    $("#scoreText"+(i+1)).text(playerScores[i]);
+
+    if(i == turnNum)
+      $("#playerLabel"+(i+1))[0].style.color = "cyan"
+    if(i == playerID)
+    {
+      // $("#playerLabel"+(i+1)).text("You");
+      $("#playerLabel"+(i+1))[0].style.fontStyle = "italic" 
+    }
+
+    $("#timerText")[0].style.top = "490px"
+    $("#timerText")[0].style.left = "1100px"
+    $("#timerText")[0].style.color = "lightgrey"
+    $("#timerText")[0].style.fontSize = "50px"
+  }
+
+  $("#charFrequency1").text("A:8 B:2 C:2 D:4 E:12 F:2 G:3 H:2 I:9 J:1 K:1 L:4 M:2");
+  $("#charFrequency1")[0].style.top  = getAdjstedCoord("y", 60)+"px";
+  $("#charFrequency1")[0].style.left = getAdjstedCoord("x", 730)+"px";
+  $("#charFrequency1")[0].style.color = "black"
+  $("#charFrequency1")[0].style.fontSize = "15px"
+  $("#charFrequency1")[0].style.fontFamily = "courier"
+  
+  $("#charFrequency2").text("N:6 O:8 P:2 Q:1 R:6 \xa0S:4 T:6 U:4 V:2 W:2 X:1 Y:2 Z:1");
+  $("#charFrequency2")[0].style.top  = getAdjstedCoord("y", 80)+"px";
+  $("#charFrequency2")[0].style.left = getAdjstedCoord("x", 730)+"px";
+  $("#charFrequency2")[0].style.fontSize = "15px"
+  $("#charFrequency2")[0].style.color = "black"
+  $("#charFrequency2")[0].style.fontFamily = "courier"
 
 }
 
 
 playButton.addEventListener("mousedown", function (evt) {
+    if(isSpectating)
+      return;
     // Updating board with deep copy every time a play is made
     if(!isValidPlay())
     {
@@ -531,7 +602,6 @@ playButton.addEventListener("mousedown", function (evt) {
     }
 
     playerScores[playerID] += score();
-
     // reseting temp tile locations
     tempTileLocs = [null,null,null,null,null,null,null];
 
@@ -682,14 +752,16 @@ function renderBoard()
 {
   setupGUI();
 
-  $("#playerLabel").text("You are player "+playerID);
+  $("#playerLabel").text("You Are Player "+playerID);
+
+  if(isSpectating)
+    $("#spectatingLabel").text("You Are Spectating") 
 
   // Showing score
   st = "Scores: "+playerScores;
   // for (let i = 0; i < playerNum; i++) {
   //   st = st+"   Player"+i+" "+playerScores[i];
   // }
-  $("#scoreText").text(st);
 
   boardImage = new Image();
   boardImage.src = "img/Background1.png";
@@ -723,30 +795,6 @@ function renderBoard()
   }
 }
 
-
-// // Game based functions -----------------------------------
-// function draw() {
-//   // drawing tiles to fill hand
-//   for(var i = 0; i < hand.length; i++) {
-//       if(hand[i] == '')
-//           hand[i] = pullTile()
-//       if(!hand[i])
-//           hand[i] = ""
-//   }
-//   renderHand();
-// }
-
-// function pullTile()
-// {
-//   var tile = tileBag[Math.floor(Math.random()* tileBag.length)];
-//   const ind = tileBag.indexOf(tile);
-//   if (ind != -1) {
-//       tileBag.splice(ind, 1);
-//   }
-//   return tile;
-// }
-//----------------------------------------------------------------------
-
 window.addEventListener("resize", function(){
   setCanvasSize();
   renderBoard();
@@ -754,6 +802,5 @@ window.addEventListener("resize", function(){
   setupGUI();
 });
 // Renders hand initially
-socket.emit("requestTiles", 7);
 renderHand();
 renderBoard();

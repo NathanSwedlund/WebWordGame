@@ -72,12 +72,41 @@ tileBag = [
 turnNum = 0
 playerNum = -1;
 playerScores = []
+playerLimit = 4;
 maxPlayerNum = -1;
+timePerTurn = 60
+
 for(var i = 0; i < playerNum; i++)
   playerScores.push(0);
 
 var clients = new Map();
 var clientId = 0;
+
+time = 0;
+function startTimer() {
+  time = timePerTurn
+  io.emit("updateTimer", time);
+  setTimeout(timerCountdown, 1000)
+}
+function timerCountdown(){
+  time--;
+  if(time < 0)
+  {
+    // Stop timer
+    // Handling whose turn it is next skipping spectators
+    if(playerNum < playerLimit)
+      turnNum = (turnNum+1)%(playerNum+1);
+    else
+      turnNum = (turnNum+1)%(playerLimit);
+
+    // Getting new tiles
+    io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
+    startTimer();
+    return;
+  }
+  io.emit("updateTimer", time);
+  setTimeout(timerCountdown, 1000)
+}
 
 function aKey(aSocket) {
   if (production) return aSocket.handshake.address;
@@ -93,15 +122,34 @@ io.on("connection", function (socket) {
   });
 
   socket.on("play", function (msg) { 
+    startTimer();
     // console.log("this is a test, ln 38 index.js");
     board = msg.board;
     console.log(board);
     
-    turnNum = (turnNum+1)%(playerNum+1);
+    // Handling whose turn it is next skipping spectators
+    if(playerNum < playerLimit)
+      turnNum = (turnNum+1)%(playerNum+1);
+    else
+      turnNum = (turnNum+1)%(playerLimit);
+
     playerScores = msg.playerScores;
     // Getting new tiles
     io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
   });
+
+  playerNum++;
+  socket.on("requestID", function(msg){
+    console.log("playerNum :: "+playerNum);
+    
+    if(playerNum < playerLimit){
+      console.log("Adding Player");
+      socket.emit("receiveID", playerNum)
+    }else{
+      console.log("Adding Spectator");
+      socket.emit("receiveID", -1)
+    }
+  })
 
   socket.on("requestTiles", function(msg){
     // Replacing tiles
@@ -122,8 +170,7 @@ io.on("connection", function (socket) {
     msg.placedNum
   });
 
-  playerNum++;
-  if(playerNum > maxPlayerNum)
+  if(playerNum > maxPlayerNum && playerNum < playerLimit)
   {
     console.log("adding new score slot");
     
