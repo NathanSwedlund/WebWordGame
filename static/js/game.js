@@ -162,6 +162,26 @@ function toTimeForm(time) {
   return s + time;
 }
 
+function getTempTilesFromBoard(){
+  for(var i = 0; i < tempTileLocs.length; i++) {
+    if(tempTileLocs[i]) {
+      x = tempTileLocs[i].x;
+      y = tempTileLocs[i].y;
+
+      hand[i] = boardTemp[y][x];
+      boardTemp[y][x] = '';
+      tempTileLocs[i] = null;
+    }
+    selected = "";
+    selectedNum = -1;
+    placedNum = 0;
+    lastCol = -1;
+    lastRow = -1;
+    renderBoard();
+    renderHand();
+  }
+}
+
 socket.on("updateTimer", function(time){
   
   if(time <= 10)
@@ -174,22 +194,7 @@ socket.on("updateTimer", function(time){
 
 // Comes from the server to update local variables
 socket.on("updateVars", function (msg) {
-
-  for(var i = 0; i < tempTileLocs.length; i++) {
-    if(tempTileLocs[i]) {
-      x = tempTileLocs[i].x;
-      y = tempTileLocs[i].y;
-
-      hand[i] = boardTemp[y][x];
-      tempTileLocs[i] = null;
-    }
-    selected = "";
-    selectedNum = -1;
-    placedNum = 0;
-    lastCol = -1;
-    lastRow = -1;
-    renderBoard();
-  }
+  getTempTilesFromBoard();
   renderHand();
 
   boardTemp = msg.board;
@@ -513,10 +518,6 @@ tileButtons[4].addEventListener("mousedown", function (evt) { tileClick(4)});
 tileButtons[5].addEventListener("mousedown", function (evt) { tileClick(5)});
 tileButtons[6].addEventListener("mousedown", function (evt) { tileClick(6)});
 
-// canvas.addEventListener("mouseup", function (evt) {
-//   console.log("up");
-// });
-
 // Selects the approprite tile once clicked
 function tileClick(tileNum){
     // Can only select tiles when its the persons turn
@@ -629,6 +630,25 @@ playButton.addEventListener("mousedown", function (evt) {
     if(isSpectating)
       return;
 
+    if(isSwapping && swapped.length != 0)
+    {
+      swappedTiles = []
+      for(var i = 0; i < swapped.length; i++)
+      {
+        swappedTiles.push(hand[swapped[i]]);
+        hand[swapped[i]] = '';
+      }
+
+      msg = {
+        tiles: swappedTiles,
+        count: swapped.length
+      };
+      // Exiting out of swapping mode
+      swapped = []
+      isSwapping = false;
+      socket.emit("requestTiles", msg);
+    }
+
     // Updating board with deep copy every time a play is made
     if(!isValidPlay())
     {
@@ -658,34 +678,13 @@ playButton.addEventListener("mousedown", function (evt) {
     renderBoard()    
 });
 // -------------------------------------------------------
-swapButton.addEventListener("mousedown", function (evt) {
-  console.log("Pressed swap button");
-  
-  if(!isSwapping)
-    isSwapping = true;
-  else {
-    if(swapped.length == 0)
-      isSwapping = false;
-    else
-    {
-      swappedTiles = []
-      for(var i = 0; i < swapped.length; i++)
-      {
-        swappedTiles.push(hand[swapped[i]]);
-        hand[swapped[i]] = '';
-      }
+swapButton.addEventListener("mousedown", function (evt) {   
+  getTempTilesFromBoard();
 
-      msg = {
-        tiles: swappedTiles,
-        count: swapped.length
-      };
-      // Exiting out of swapping mode
-      swapped = [];
-      isSwapping = false;
-      
-      socket.emit("requestTiles", msg);
-    }
-  } 
+  console.log("Pressed swap button");
+  swapped = [];
+  isSwapping = !isSwapping
+  renderBoard();
 });
 // GUI functions ----------------------------------------------
 function placeImage(imageName, x,y, sizex,sizey)
@@ -839,6 +838,13 @@ function renderBoard()
     tileSizeX = getAdjstedCoord("x", 42.3);
     tileSizeY = getAdjstedCoord("y", 42.3);
     ysizeMod = getAdjstedCoord("y",0.4);
+
+    if(isSwapping) {
+      swapButton.src = "img/swap_selected.png"
+    } else {
+      swapButton.src = "img/swap.png"
+    }
+
     for(var i = 0; i < 15; i++)
     {
         for(var x = 0; x < 15; x++)
