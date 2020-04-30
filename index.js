@@ -76,6 +76,8 @@ playerLimit = 4;
 maxPlayerNum = -1;
 timePerTurn = 60
 
+units_per_time = 1000
+
 for(var i = 0; i < playerNum; i++)
   playerScores.push(0);
 
@@ -83,12 +85,19 @@ var clients = new Map();
 var clientId = 0;
 
 time = 0;
+timersGoing = 0
 function startTimer() {
   time = timePerTurn
   io.emit("updateTimer", time);
-  setTimeout(timerCountdown, 1000)
+  timersGoing++;
+  setTimeout(timerCountdown, units_per_time)
 }
 function timerCountdown(){
+  if(timersGoing > 1)
+  {
+    timersGoing = 1;
+    return;
+  }
   time--;
   if(time < 0)
   {
@@ -105,7 +114,7 @@ function timerCountdown(){
     return;
   }
   io.emit("updateTimer", time);
-  setTimeout(timerCountdown, 1000)
+  setTimeout(timerCountdown, units_per_time)
 }
 
 function aKey(aSocket) {

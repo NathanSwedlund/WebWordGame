@@ -162,11 +162,27 @@ function toTimeForm(time) {
 
 socket.on("updateTimer", function(time){
   
+  if(time <= 10)
+    $("#timerText")[0].style.color = "red"
+  else
+    $("#timerText")[0].style.color = "lightgrey"
+
   $("#timerText").text(toTimeForm(time));
 });
 
 // Comes from the server to update local variables
 socket.on("updateVars", function (msg) {
+
+  for(var i = 0; i < tempTileLocs.length; i++) {
+    if(tempTileLocs[i]) {
+      x = tempTileLocs[i].x;
+      y = tempTileLocs[i].y;
+
+      hand[i] = boardTemp[y][x];
+    }
+  }
+  renderHand();
+  
   boardTemp = msg.board;
   board = [];
   boardTemp.forEach(element => {
