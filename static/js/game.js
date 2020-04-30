@@ -179,6 +179,7 @@ socket.on("updateVars", function (msg) {
       y = tempTileLocs[i].y;
 
       hand[i] = boardTemp[y][x];
+      tempTileLocs[i] = null;
     }
   }
   renderHand();
