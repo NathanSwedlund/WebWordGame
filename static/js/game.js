@@ -181,6 +181,12 @@ socket.on("updateVars", function (msg) {
       hand[i] = boardTemp[y][x];
       tempTileLocs[i] = null;
     }
+    selected = "";
+    selectedNum = -1;
+    placedNum = 0;
+    lastCol = -1;
+    lastRow = -1;
+    renderBoard();
   }
   renderHand();
 
@@ -612,6 +618,7 @@ function setupGUI()
 playButton.addEventListener("mousedown", function (evt) {
     if(isSpectating)
       return;
+
     // Updating board with deep copy every time a play is made
     if(!isValidPlay())
     {
