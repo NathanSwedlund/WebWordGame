@@ -4,6 +4,9 @@
 //    (dictionary)
 //  Tile Swap (From bag)
 //  Tile Swap (Within hand)
+//  Timer ##
+//  Limit to four players ##
+//  Update GUI ##
 //  Drag to place
 //  Accurate graphics regardless of screen size ##
 //  IP address based identification
@@ -84,6 +87,17 @@ for(var i = 0; i < playerNum; i++)
 var clients = new Map();
 var clientId = 0;
 
+function endTurn()
+{
+  if(playerNum < playerLimit)
+    turnNum = (turnNum+1)%(playerNum+1);
+  else
+    turnNum = (turnNum+1)%(playerLimit);
+
+    // Getting new tiles
+    io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
+}
+
 time = 0;
 timersGoing = 0
 function startTimer() {
@@ -103,14 +117,7 @@ function timerCountdown(){
   {
     timersGoing--;
     // Stop timer
-    // Handling whose turn it is next skipping spectators
-    if(playerNum < playerLimit)
-      turnNum = (turnNum+1)%(playerNum+1);
-    else
-      turnNum = (turnNum+1)%(playerLimit);
-
-    // Getting new tiles
-    io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
+    endTurn()
     startTimer();
     return;
   }
@@ -137,11 +144,7 @@ io.on("connection", function (socket) {
     board = msg.board;
     console.log(board);
     
-    // Handling whose turn it is next skipping spectators
-    if(playerNum < playerLimit)
-      turnNum = (turnNum+1)%(playerNum+1);
-    else
-      turnNum = (turnNum+1)%(playerLimit);
+    endTurn();
 
     playerScores = msg.playerScores;
     // Getting new tiles
@@ -163,7 +166,7 @@ io.on("connection", function (socket) {
 
   socket.on("requestTiles", function(msg){
     // Replacing tiles
-    drawNum = msg
+    drawNum = msg.count
     tiles = [];
     for (let i = 0; i < drawNum; i++) {
       var tile = tileBag[Math.floor(Math.random()* tileBag.length)];
@@ -174,6 +177,12 @@ io.on("connection", function (socket) {
       tiles.push(tile);
     }
     socket.emit("receiveTiles", tiles);
+
+    if(msg.tiles){
+      console.log("adding "+msg.tiles+" to the bag");
+      tileBag.concat(msg.tiles);
+      endTurn();
+    }
   });
 
   socket.on("draw", function(msg){

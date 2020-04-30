@@ -2,6 +2,8 @@
 var socket = io();
 tempTileLocs = [null,null,null,null,null,null,null];
 
+swapped = [];
+isSwapping = false;
 // Stores the points per tile
 var tilePoints = {
   A: 1,
@@ -121,7 +123,7 @@ socket.on("receiveID", function(ID) {
   if(ID == -1)
     isSpectating = true;
   else
-    socket.emit("requestTiles", 7);
+    socket.emit("requestTiles", {count:7});
   renderBoard();
 });
 
@@ -520,8 +522,16 @@ function tileClick(tileNum){
     // Can only select tiles when its the persons turn
     if(turnNum == playerID)
     {
-      selected = hand[tileNum];
-      selectedNum = tileNum;
+      if(isSwapping) {
+        if(swapped.includes(tileNum))
+          swapped.splice(swapped.indexOf(tileNum), 1);
+        else
+          swapped.push(tileNum);
+
+      } else {
+        selected = hand[tileNum];
+        selectedNum = tileNum;
+      }
       renderHand();
     }
 }
@@ -626,8 +636,10 @@ playButton.addEventListener("mousedown", function (evt) {
     }
 
     playerScores[playerID] += score();
+
     // reseting temp tile locations
     tempTileLocs = [null,null,null,null,null,null,null];
+
 
     board = [];
     boardTemp.forEach(element => {
@@ -637,7 +649,7 @@ playButton.addEventListener("mousedown", function (evt) {
     
     socket.emit("play", {playerScores:playerScores, board:board, placedNum:placedNum})
 
-    socket.emit("requestTiles", placedNum);
+    socket.emit("requestTiles", {count:placedNum});
     selected = "";
     selectedNum = -1;
     placedNum = 0;
@@ -646,7 +658,35 @@ playButton.addEventListener("mousedown", function (evt) {
     renderBoard()    
 });
 // -------------------------------------------------------
+swapButton.addEventListener("mousedown", function (evt) {
+  console.log("Pressed swap button");
+  
+  if(!isSwapping)
+    isSwapping = true;
+  else {
+    if(swapped.length == 0)
+      isSwapping = false;
+    else
+    {
+      swappedTiles = []
+      for(var i = 0; i < swapped.length; i++)
+      {
+        swappedTiles.push(hand[swapped[i]]);
+        hand[swapped[i]] = '';
+      }
 
+      msg = {
+        tiles: swappedTiles,
+        count: swapped.length
+      };
+      // Exiting out of swapping mode
+      swapped = [];
+      isSwapping = false;
+      
+      socket.emit("requestTiles", msg);
+    }
+  } 
+});
 // GUI functions ----------------------------------------------
 function placeImage(imageName, x,y, sizex,sizey)
 {
@@ -753,7 +793,7 @@ function canPlace(coords)
 function renderHand()
 {
     for (var i = 0; i < 7; i++) {
-      if(i == selectedNum && hand[i] != "")
+      if(i == selectedNum && hand[i] != "" || swapped.includes(i))
       {
 
         tileButtons[i].src = "img/letters_selected/"+hand[i]+".png";
