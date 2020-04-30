@@ -101,6 +101,7 @@ function timerCountdown(){
   time--;
   if(time < 0)
   {
+    timersGoing--;
     // Stop timer
     // Handling whose turn it is next skipping spectators
     if(playerNum < playerLimit)
