@@ -2,8 +2,10 @@
 var socket = io();
 tempTileLocs = [null,null,null,null,null,null,null];
 
+
 swapped = [];
 isSwapping = false;
+
 // Stores the points per tile
 var tilePoints = {
   A: 1,
@@ -123,8 +125,15 @@ socket.on("receiveID", function(ID) {
   if(ID == -1)
     isSpectating = true;
   else
-    socket.emit("requestTiles", {count:7});
+    socket.emit("requestTiles", {oldHand:hand, ID:playerID});
   renderBoard();
+});
+
+// This calls when you emit "requestTiles". the server 
+//  sends you the requested number of tiles
+socket.on("receiveTiles", function(newHand){
+  hand = newHand;
+  renderHand();
 });
 
 var playerNum = -1;
@@ -139,25 +148,12 @@ var isVertical;
 var placedNum = 0;
 var removal = { x: -1, y:-1};
 
-// This calls when you emit "requestTiles". the server 
-//  sends you the requested number of tiles
-socket.on("receiveTiles", function(tiles){
-  num = 0
-  for (let i = 0; i < hand.length && tiles[num]; i++) {
-    if(hand[i] == '')
-      hand[i] = tiles[num++];
-  }
-  renderHand();
-});
-
 function toTimeForm(time) {
   s = ""
   s += Math.floor(time/60)+":"
   time %= 60;
   s += Math.floor(time/10);
   time %= 10;
-
-  console.log(s + time);
 
   return s + time;
 }
@@ -201,9 +197,7 @@ socket.on("updateVars", function (msg) {
   board = [];
   boardTemp.forEach(element => {
     board.push([...element])
-  });
-  
-  console.log(msg);  
+  });  
   turnNum = msg.turnNum;
 
   playerNum = msg.playerNum;
@@ -632,16 +626,10 @@ playButton.addEventListener("mousedown", function (evt) {
 
     if(isSwapping && swapped.length != 0)
     {
-      swappedTiles = []
-      for(var i = 0; i < swapped.length; i++)
-      {
-        swappedTiles.push(hand[swapped[i]]);
-        hand[swapped[i]] = '';
-      }
-
       msg = {
-        tiles: swappedTiles,
-        count: swapped.length
+        swapped:   swapped,
+        oldHand: hand,
+        ID:      playerID
       };
       // Exiting out of swapping mode
       swapped = []
@@ -669,7 +657,7 @@ playButton.addEventListener("mousedown", function (evt) {
     
     socket.emit("play", {playerScores:playerScores, board:board, placedNum:placedNum})
 
-    socket.emit("requestTiles", {count:placedNum});
+    socket.emit("requestTiles", {oldHand:hand, ID:playerID});
     selected = "";
     selectedNum = -1;
     placedNum = 0;
@@ -680,8 +668,6 @@ playButton.addEventListener("mousedown", function (evt) {
 // -------------------------------------------------------
 swapButton.addEventListener("mousedown", function (evt) {   
   getTempTilesFromBoard();
-
-  console.log("Pressed swap button");
   swapped = [];
   isSwapping = !isSwapping
   renderBoard();

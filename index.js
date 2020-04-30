@@ -2,15 +2,9 @@
 //  Win condition
 //  Challenge Button
 //    (dictionary)
-//  Tile Swap (From bag)
 //  Tile Swap (Within hand)
-//  Timer ##
-//  Limit to four players ##
-//  Update GUI ##
 //  Drag to place
-//  Accurate graphics regardless of screen size ##
 //  IP address based identification
-//  Production
 //  Presentation
 
 const express = require("express");
@@ -22,7 +16,6 @@ var port = process.env.PORT || 3000;
 const production = false;
 
 app.use(express.static(path.join(__dirname, "./static")));
-
 
 // Setting up multiplayer variables
 board = [
@@ -78,6 +71,12 @@ playerScores = []
 playerLimit = 4;
 maxPlayerNum = -1;
 timePerTurn = 60
+hands = [
+  ["","","","","","",""],
+  ["","","","","","",""],
+  ["","","","","","",""],
+  ["","","","","","",""]
+]
 
 units_per_time = 1000
 
@@ -94,8 +93,8 @@ function endTurn()
   else
     turnNum = (turnNum+1)%(playerLimit);
 
-    // Getting new tiles
-    io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
+  // Getting new tiles
+  io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
 }
 
 time = 0;
@@ -165,29 +164,39 @@ io.on("connection", function (socket) {
   })
 
   socket.on("requestTiles", function(msg){
-    // Replacing tiles
-    drawNum = msg.count
-    tiles = [];
-    for (let i = 0; i < drawNum; i++) {
-      var tile = tileBag[Math.floor(Math.random()* tileBag.length)];
-      const ind = tileBag.indexOf(tile);
-      if (ind != -1) {
-          tileBag.splice(ind, 1);
-      }
-      tiles.push(tile);
-    }
-    socket.emit("receiveTiles", tiles);
+    oldHand = msg.oldHand;
+    ID = msg.ID;
 
-    if(msg.tiles){
-      console.log("adding "+msg.tiles+" to the bag");
-      tileBag.concat(msg.tiles);
+    if(msg.swapped){
+      swapped = msg.swapped;
+      swappedTiles = []
+      for(var i = 0; i < swapped.length; i++)
+      {
+        swappedTiles.push(hands[ID][swapped[i]]);
+        oldHand[swapped[i]] = '';
+      }
+      tileBag.concat(swappedTiles);
       endTurn();
     }
+    
+    // Replacing tiles
+    for (let i = 0; i < hands[ID].length; i++) {
+      if(oldHand[i] == '')
+      {
+        var tile = tileBag[Math.floor(Math.random()*tileBag.length)];
+        const ind = tileBag.indexOf(tile);
+        if (ind != -1) {
+            tileBag.splice(ind, 1);
+        }
+        hands[ID][i] = tile;
+      }
+    }
+    socket.emit("receiveTiles", hands[ID]);
   });
 
-  socket.on("draw", function(msg){
-    msg.placedNum
-  });
+  // socket.on("draw", function(msg){
+  //   msg.placedNum
+  // });
 
   if(playerNum > maxPlayerNum && playerNum < playerLimit)
   {
