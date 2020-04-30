@@ -182,7 +182,7 @@ socket.on("updateVars", function (msg) {
     }
   }
   renderHand();
-  
+
   boardTemp = msg.board;
   board = [];
   boardTemp.forEach(element => {
@@ -585,8 +585,8 @@ function setupGUI()
       $("#playerLabel"+(i+1))[0].style.fontStyle = "italic" 
     }
 
-    $("#timerText")[0].style.top = "490px"
-    $("#timerText")[0].style.left = "1100px"
+    $("#timerText")[0].style.top = getAdjstedCoord("y", 490)+"px";
+    $("#timerText")[0].style.left = getAdjstedCoord("x", 1100)+"px";
     $("#timerText")[0].style.color = "lightgrey"
     $("#timerText")[0].style.fontSize = "50px"
   }
