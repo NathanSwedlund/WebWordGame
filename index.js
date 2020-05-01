@@ -13,7 +13,7 @@ const app = express();
 var http = require("http").createServer(app);
 var io = require("socket.io")(http);
 var port = process.env.PORT || 3000;
-const production = true;
+const production = false;
 
 app.use(express.static(path.join(__dirname, "./static")));
 
@@ -120,16 +120,30 @@ var clients = new Map();
 
 function endTurn()
 {
-  for(var i = 0; i < playerLimit; i++)
-  {
-    if(playerNum < playerLimit)
-      turnNum = (turnNum+1)%(playerNum);
-    else
-      turnNum = (turnNum+1)%(playerLimit);
+  // for(var i = 0; i < playerLimit; i++)
+  // {
+  //   console.log("ENDING TURN  ::  "+playerNum)
+  //   if(playerNum < playerLimit)
+  //     turnNum = (turnNum+1)%(playerNum+1);
+  //   else
+  //     turnNum = (turnNum+1)%(playerLimit);
 
-    if(playersPesent[turnNum])
+  //   if(playersPesent[turnNum])
+  //     break;
+  // } 
+
+  limit = turnNum;
+  next = turnNum+1%playerLimit;
+  while(playersPesent[next] == false) {
+    next = (next+1)%playerLimit;
+    if(limit == next)
+    {
+      console.log("NO ONE IS HERE");
       break;
-  } 
+    }
+  }
+
+  turnNum = next;
   // Getting new tiles
   io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
 }
@@ -317,6 +331,7 @@ io.on("connection", function (socket) {
       }
       tileBag.concat(swappedTiles);
       endTurn();
+      startTimer();
     }
     
     // Replacing tiles
@@ -378,8 +393,8 @@ io.on("connection", function (socket) {
       console.log("Player left");
       playersPesent[ID] = false;
     }
-    if(playerNum > -1)
-      playerNum--;
+    // if(playerNum > -1)
+    //   playerNum--;
   });
 
 });
