@@ -126,8 +126,6 @@ function endTurn()
   io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
 }
 
-
-
 time = 0;
 timersGoing = 0
 function startTimer() {
@@ -136,7 +134,15 @@ function startTimer() {
   timersGoing++;
   setTimeout(timerCountdown, units_per_time)
 }
+
+timerCanGo = false
 function timerCountdown(){
+  if(!timerCanGo)
+  {
+    timersGoing--;
+    console.log("Timer Can't go");
+    return;
+  }
   if(timersGoing > 1)
   {
     timersGoing = 1;
@@ -163,6 +169,7 @@ function aKey(aSocket) {
 io.on("connection", function (socket) {
 
   socket.on("reset", function(){
+    timerCanGo = false;
     turnNum = 0
     playerScores = []
     maxPlayerNum = -1;
@@ -229,6 +236,7 @@ io.on("connection", function (socket) {
   });
 
   socket.on("play", function (msg) { 
+    timerCanGo = true
     startTimer();
     // console.log("this is a test, ln 38 index.js");
     board = msg.board;
@@ -315,6 +323,7 @@ io.on("connection", function (socket) {
       }
       playerScores[ID] += bonus;
       io.emit("victory", {ID:ID, bonus:bonus})
+      timerCanGo = false;
       io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
     }
   });

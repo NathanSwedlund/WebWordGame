@@ -130,7 +130,7 @@ socket.on("receiveID", function(ID) {
 
 socket.on("resetIndiv", function(ID) {
   console.log("Resetting");
-  
+  $("#timerText").text("--");
   board = [
     ['','','','','','','','','','','','','','',''],
     ['','','','','','','','','','','','','','',''],
@@ -693,6 +693,8 @@ socket.on("victory", function(msg) {
   $("#gameOver2")[0].style.fontSize = "30px"
   $("#gameOver2")[0].style.color = "cyan"
   $("#gameOver2")[0].style.textShadow = "-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black"
+  
+  $("#timerText").text("--");
 
   renderBoard();
   renderHand();
@@ -746,6 +748,9 @@ playButton.addEventListener("mousedown", function (evt) {
 });
 // -------------------------------------------------------
 swapButton.addEventListener("mousedown", function (evt) {   
+  if(turnNum != playerID)
+    return;
+
   getTempTilesFromBoard();
   swapped = [];
   isSwapping = !isSwapping
