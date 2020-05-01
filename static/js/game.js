@@ -618,6 +618,28 @@ function setupGUI()
   $("#charFrequency2")[0].style.fontFamily = "courier"
 
 }
+socket.on("victory", function(msg) {
+  winnerPoints = Math.max.apply(null, playerScores);
+  winner = playerScores.indexOf(winnerPoints);
+
+  $("#gameOver1").text("Player "+(msg.ID+1)+" went out and gained "+msg.bonus+" points.");
+  $("#gameOver1")[0].style.top  = getAdjstedCoord("y", 150)+"px";
+  $("#gameOver1")[0].style.left = getAdjstedCoord("x", 150)+"px";
+  $("#gameOver1")[0].style.fontSize = "30px"
+  $("#gameOver1")[0].style.color = "cyan"
+  $("#gameOver1")[0].style.textShadow = "-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black"
+
+  $("#gameOver2").text("Player "+(winner+1)+" wins with "+winnerPoints+" points!");
+  $("#gameOver2")[0].style.top  = getAdjstedCoord("y", 200)+"px";
+  $("#gameOver2")[0].style.left = getAdjstedCoord("x", 150)+"px";
+  $("#gameOver2")[0].style.fontSize = "30px"
+  $("#gameOver2")[0].style.color = "cyan"
+  $("#gameOver2")[0].style.textShadow = "-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black"
+
+  renderBoard();
+  renderHand();
+
+})
 
 
 playButton.addEventListener("mousedown", function (evt) {

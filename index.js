@@ -36,25 +36,25 @@ board = [
   ['','','','','','','','','','','','','','','']
 ];
 tileBag = [
-  'A','A','A','A','A','A','A','A','A',
-  'B','B',
-  'C','C',
-  'D','D','D','D',
-  'E','E','E','E','E','E','E','E','E','E','E','E',
-  'F','F',
-  'G','G','G',
-  'H','H',
-  'I','I','I','I','I','I','I','I','I',
-  'J',
-  'K',
-  'L','L','L','L',
-  'M','M',
-  'N','N','N','N','N','N',
-  'O','O','O','O','O','O','O','O',
-  'P','P',
-  'Q',
-  'R','R','R','R','R','R',
-  'S','S','S','S',
+  // 'A','A','A','A','A','A','A','A','A',
+  // 'B','B',
+  // 'C','C',
+  // 'D','D','D','D',
+  // 'E','E','E','E','E','E','E','E','E','E','E','E',
+  // 'F','F',
+  // 'G','G','G',
+  // 'H','H',
+  // 'I','I','I','I','I','I','I','I','I',
+  // 'J',
+  // 'K',
+  // 'L','L','L','L',
+  // 'M','M',
+  // 'N','N','N','N','N','N',
+  // 'O','O','O','O','O','O','O','O',
+  // 'P','P',
+  // 'Q',
+  // 'R','R','R','R','R','R',
+  // 'S','S','S','S',
   'T','T','T','T','T','T',
   'U','U','U','U',
   'V','V',
@@ -64,6 +64,35 @@ tileBag = [
   'Z',
   '_blank', '_blank'
 ];
+var tilePoints = {
+  A: 1,
+  B: 3,
+  C: 3,
+  D: 2,
+  E: 1,
+  F: 4,
+  G: 2,
+  H: 4,
+  I: 1,
+  J: 8,
+  K: 5,
+  L: 1,
+  M: 3,
+  N: 1,
+  O: 1,
+  P: 3,
+  Q: 10,
+  R: 1,
+  S: 1,
+  T: 1,
+  U: 1,
+  V: 4,
+  W: 4,
+  X: 8,
+  Y: 4,
+  Z: 10,
+  _blank:0
+};
 
 turnNum = 0
 playerNum = -1;
@@ -184,19 +213,49 @@ io.on("connection", function (socket) {
       if(oldHand[i] == '')
       {
         var tile = tileBag[Math.floor(Math.random()*tileBag.length)];
-        const ind = tileBag.indexOf(tile);
-        if (ind != -1) {
-            tileBag.splice(ind, 1);
+        if(tile != null) {
+          const ind = tileBag.indexOf(tile);
+          if (ind != -1) {
+              tileBag.splice(ind, 1);
+          }
+          hands[ID][i] = tile;
         }
-        hands[ID][i] = tile;
+        else
+          hands[ID][i] = '';
       }
     }
-    socket.emit("receiveTiles", hands[ID]);
-  });
 
-  // socket.on("draw", function(msg){
-  //   msg.placedNum
-  // });
+    socket.emit("receiveTiles", hands[ID]);
+
+    // There are no more tiles in the bag or the persons hand
+    //  This is a win condition
+    empty = true
+    for (let u = 0; u < hands[ID].length && empty; u++) {
+      if(hands[ID][u] != '')
+        empty = false;
+    }
+
+    if(empty)
+    {
+      console.log("Game Over: player "+ID+" went out");
+      
+      bonus = 0;
+      for (let i = 0; i < hands.length; i++) {
+        tempBonus = 0
+        for (let x = 0; x < hands[i].length; x++) {
+          if(tilePoints[hands[i][x]])
+            tempBonus += tilePoints[hands[i][x]]
+          hands[i][x] = '';
+        }
+        bonus += tempBonus;
+        if(i != ID)
+          playerScores[i] -= tempBonus;
+      }
+      playerScores[ID] += bonus;
+      io.emit("victory", {ID:ID, bonus:bonus})
+      io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
+    }
+  });
 
   if(playerNum > maxPlayerNum && playerNum < playerLimit)
   {
