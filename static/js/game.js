@@ -592,7 +592,7 @@ function tileClick(tileNum){
 // Setting up play button
 playButton = $("#playButton")[0];
 swapButton = $("#swapButton")[0];
-challengeButton = $("#challengeButton")[0];
+// challengeButton = $("#challengeButton")[0];
 //
 function setupGUI()
 {
@@ -616,10 +616,10 @@ function setupGUI()
   playButton.style.width  = getAdjstedCoord("x", 180)+"px";
   playButton.style.height = getAdjstedCoord("y", 80)+"px";
 
-  challengeButton.style.top    = getAdjstedCoord("y", 510)+"px";
-  challengeButton.style.left   = getAdjstedCoord("x", 910)+"px";
-  challengeButton.style.width  = getAdjstedCoord("x", 90)+"px";
-  challengeButton.style.height = getAdjstedCoord("y", 40)+"px";
+  // challengeButton.style.top    = getAdjstedCoord("y", 510)+"px";
+  // challengeButton.style.left   = getAdjstedCoord("x", 910)+"px";
+  // challengeButton.style.width  = getAdjstedCoord("x", 90)+"px";
+  // challengeButton.style.height = getAdjstedCoord("y", 40)+"px";
 
   swapButton.style.top    = getAdjstedCoord("y", 555)+"px";
   swapButton.style.left   = getAdjstedCoord("x", 915)+"px";
