@@ -94,12 +94,8 @@ var tilePoints = {
   _blank:0
 };
 
-
-playerIDs = [];
-playersPesent = [false, false, false, false];
 turnNum = 0
 playerNum = -1;
-
 playerScores = []
 playerLimit = 4;
 maxPlayerNum = -1;
@@ -117,33 +113,15 @@ for(var i = 0; i < playerNum; i++)
   playerScores.push(0);
 
 var clients = new Map();
+var clientId = 0;
 
 function endTurn()
 {
-  // for(var i = 0; i < playerLimit; i++)
-  // {
-  //   console.log("ENDING TURN  ::  "+playerNum)
-  //   if(playerNum < playerLimit)
-  //     turnNum = (turnNum+1)%(playerNum+1);
-  //   else
-  //     turnNum = (turnNum+1)%(playerLimit);
+  if(playerNum < playerLimit)
+    turnNum = (turnNum+1)%(playerNum+1);
+  else
+    turnNum = (turnNum+1)%(playerLimit);
 
-  //   if(playersPesent[turnNum])
-  //     break;
-  // } 
-
-  limit = turnNum;
-  next = turnNum+1%playerLimit;
-  while(playersPesent[next] == false) {
-    next = (next+1)%playerLimit;
-    if(limit == next)
-    {
-      console.log("NO ONE IS HERE");
-      break;
-    }
-  }
-
-  turnNum = next;
   // Getting new tiles
   io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
 }
@@ -189,19 +167,11 @@ function aKey(aSocket) {
 }
 
 io.on("connection", function (socket) {
-  playerNum++;
-  console.log("!clients.get(aKey(socket)   "+!clients.get(aKey(socket)));
-  
-  if(clients.get(aKey(socket)) == null){
-    console.log(aKey(socket)+ " CLIENTS ADDING "+ playerNum);
-    clients.set(aKey(socket), playerNum);
-  }
 
-  socket.on("reset", function() {
+  socket.on("reset", function(){
     timerCanGo = false;
     turnNum = 0
     playerScores = []
-    playerIDs = [];
     maxPlayerNum = -1;
     hands = [
       ["","","","","","",""],
@@ -259,7 +229,7 @@ io.on("connection", function (socket) {
     io.emit("resetIndiv");
   });
   // remember this socket id
-  // console.log("connection: " + socket.id + " key: " + aKey + " New Player: " + playerNum);
+  console.log("connection: " + socket.id + " clientId: " + clientId + " key: " + aKey + " New Player: " + playerNum);
   
   socket.on("print", function (msg) { 
     console.log(msg);
@@ -270,7 +240,7 @@ io.on("connection", function (socket) {
     startTimer();
     // console.log("this is a test, ln 38 index.js");
     board = msg.board;
-    // console.log(board);
+    console.log(board);
     
     endTurn();
 
@@ -279,43 +249,18 @@ io.on("connection", function (socket) {
     io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
   });
 
-  socket.on("requestStartingVars", function(msg) {
-    ID = clients.get(aKey(socket));
-    console.log("ID  ::: "+ID);
-    console.log("playerNum  ::: "+playerNum);
-    console.log("playersPesent[ID]  ::: "+playersPesent[ID]);
-    console.log("playerIDs  ::: "+playerIDs);
+  playerNum++;
+  socket.on("requestID", function(msg){
+    console.log("playerNum :: "+playerNum);
     
-    if(playerIDs.includes(ID)) { // Player is rejoining
-      if(playersPesent[ID]) { // Already here
-        socket.emit("receiveStartingVars", {ID:-1})
-      } else {
-        console.log("Welcoming pre-existing Player");
-        console.log("playersPesent[ID] " + playersPesent[ID]);
-        socket.emit("receiveStartingVars", {ID:playerIDs.indexOf(ID), hand:hands[ID]})
-        playersPesent[ID] = true;
-        io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
-      }
-    } else if(playerIDs.length < playerLimit) {// New player
-      playerIDs.push(ID)
-      playersPesent[playerNum] = true;
-
+    if(playerNum < playerLimit){
       console.log("Adding Player");
-      if(playerNum > maxPlayerNum && playerNum < playerLimit)
-      {
-        console.log("adding new score slot");
-        
-        maxPlayerNum = playerNum;
-        playerScores.push(0);
-      }
-      io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
-      socket.emit("receiveStartingVars", {ID:playerIDs.indexOf(ID)})
-
-    } else { // is new spectator
+      socket.emit("receiveID", playerNum)
+    }else{
       console.log("Adding Spectator");
-      socket.emit("receiveStartingVars", {ID:-1})
+      socket.emit("receiveID", -1)
     }
-  });
+  })
 
   socket.on("requestTiles", function(msg){
     oldHand = msg.oldHand;
@@ -331,7 +276,6 @@ io.on("connection", function (socket) {
       }
       tileBag.concat(swappedTiles);
       endTurn();
-      startTimer();
     }
     
     // Replacing tiles
@@ -384,17 +328,21 @@ io.on("connection", function (socket) {
     }
   });
 
-  socket.on('disconnect', function() {
-    ID = clients.get(aKey(socket));
+  if(playerNum > maxPlayerNum && playerNum < playerLimit)
+  {
+    console.log("adding new score slot");
+    
+    maxPlayerNum = playerNum;
+    playerScores.push(0);
+  }
+  io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
 
-    if(ID >= playerLimit)
-      console.log("Spectator left");
-    if(ID <= playerLimit) {
-      console.log("Player left");
-      playersPesent[ID] = false;
-    }
-    // if(playerNum > -1)
-    //   playerNum--;
+  var aKey = socket.id;
+  clients.set(aKey, { id: playerNum });
+
+  socket.on('disconnect', function() {
+    console.log("disconnect from: " + socket.io + "  ip: " + socket.handshake.address);
+    playerNum--;
   });
 
 });
@@ -405,5 +353,7 @@ http.listen(port, function () {
 
 
 app.get("/", function (req, res) {
-  res.sendFile(__dirname + "./index.html");
+  console.log("HUGE TEST TIME!!!!!!    :::::    "+clientId);
+  if(clientId < 4)
+    res.sendFile(__dirname + "./index.html");
 });

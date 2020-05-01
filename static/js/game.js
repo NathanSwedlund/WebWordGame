@@ -116,22 +116,16 @@ var hand = ['','','','','','',''];
 var turnNum = -1;
 var playerID = -1;
 var isSpectating = false;
-socket.emit("requestStartingVars");
-socket.on("receiveStartingVars", function(vars) {
-  playerID = vars.ID;
-  // Rejoining player gets their hand back
-  if(vars.hand){ 
-    console.log("Old player");
-    hand = vars.hand;
-  } else { // New Arrival
-    console.log("New player");
-    if(playerID == -1) // Is spectator
-      isSpectating = true;
-    else // Is player
-      socket.emit("requestTiles", {oldHand:hand, ID:playerID});
-  }
+socket.emit("requestID");
+socket.on("receiveID", function(ID) {
+  console.log("getting ID :: "+ID);
+  
+  playerID = ID;
+  if(ID == -1)
+    isSpectating = true;
+  else
+    socket.emit("requestTiles", {oldHand:hand, ID:playerID});
   renderBoard();
-  renderHand();
 });
 
 socket.on("resetIndiv", function(ID) {
