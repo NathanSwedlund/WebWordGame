@@ -643,7 +643,7 @@ function setupGUI()
 
     $("#scoreText"+(i+1))[0].style.top  = getAdjstedCoord("y", 170)+"px";
     $("#scoreText"+(i+1))[0].style.left = getAdjstedCoord("x", 760+140*i)+"px";
-    $("#scoreText"+(i+1))[0].style.fontSize = "25px"
+    $("#scoreText"+(i+1))[0].style.fontSize = getAdjstedCoord("x", 25)+"px"
     $("#scoreText"+(i+1))[0].style.color = "lightgrey"
     $("#scoreText"+(i+1)).text(playerScores[i]);
 
@@ -658,22 +658,24 @@ function setupGUI()
     $("#timerText")[0].style.top = getAdjstedCoord("y", 490)+"px";
     $("#timerText")[0].style.left = getAdjstedCoord("x", 1100)+"px";
     $("#timerText")[0].style.color = "lightgrey"
-    $("#timerText")[0].style.fontSize = "50px"
+    $("#timerText")[0].style.fontSize = getAdjstedCoord("x", 50)+"px"
   }
 
   $("#charFrequency1").text("A:8 B:2 C:2 D:4 E:12 F:2 G:3 H:2 I:9 J:1 K:1 L:4 M:2");
   $("#charFrequency1")[0].style.top  = getAdjstedCoord("y", 60)+"px";
   $("#charFrequency1")[0].style.left = getAdjstedCoord("x", 730)+"px";
-  $("#charFrequency1")[0].style.color = "black"
-  $("#charFrequency1")[0].style.fontSize = "15px"
+  $("#charFrequency1")[0].style.color = "grey"
+  $("#charFrequency1")[0].style.fontSize = getAdjstedCoord("x", 15)+"px"
   $("#charFrequency1")[0].style.fontFamily = "courier"
-  
+  $("#charFrequency1")[0].style.textShadow = "-0.5px 0 black, 0 0.5px black, 0.5px 0 black, 0 -0.5px black"
+
   $("#charFrequency2").text("N:6 O:8 P:2 Q:1 R:6 \xa0S:4 T:6 U:4 V:2 W:2 X:1 Y:2 Z:1");
   $("#charFrequency2")[0].style.top  = getAdjstedCoord("y", 80)+"px";
   $("#charFrequency2")[0].style.left = getAdjstedCoord("x", 730)+"px";
-  $("#charFrequency2")[0].style.fontSize = "15px"
-  $("#charFrequency2")[0].style.color = "black"
+  $("#charFrequency2")[0].style.fontSize = getAdjstedCoord("x", 15)+"px"
+  $("#charFrequency2")[0].style.color = "grey"
   $("#charFrequency2")[0].style.fontFamily = "courier"
+  $("#charFrequency2")[0].style.textShadow = "-0.5px 0 black, 0 0.5px black, 0.5px 0 black, 0 -0.5px black"
 
 }
 socket.on("victory", function(msg) {
@@ -683,14 +685,14 @@ socket.on("victory", function(msg) {
   $("#gameOver1").text("Player "+(msg.ID+1)+" went out and gained "+msg.bonus+" points.");
   $("#gameOver1")[0].style.top  = getAdjstedCoord("y", 150)+"px";
   $("#gameOver1")[0].style.left = getAdjstedCoord("x", 150)+"px";
-  $("#gameOver1")[0].style.fontSize = "30px"
+  $("#gameOver1")[0].style.fontSize = getAdjstedCoord("x", 30)+"px"
   $("#gameOver1")[0].style.color = "cyan"
   $("#gameOver1")[0].style.textShadow = "-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black"
 
   $("#gameOver2").text("Player "+(winner+1)+" wins with "+winnerPoints+" points!");
   $("#gameOver2")[0].style.top  = getAdjstedCoord("y", 200)+"px";
   $("#gameOver2")[0].style.left = getAdjstedCoord("x", 150)+"px";
-  $("#gameOver2")[0].style.fontSize = "30px"
+  $("#gameOver2")[0].style.fontSize = getAdjstedCoord("x", 30)+"px"
   $("#gameOver2")[0].style.color = "cyan"
   $("#gameOver2")[0].style.textShadow = "-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black"
   
