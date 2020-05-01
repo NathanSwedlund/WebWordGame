@@ -13,7 +13,7 @@ const app = express();
 var http = require("http").createServer(app);
 var io = require("socket.io")(http);
 var port = process.env.PORT || 3000;
-const production = false;
+const production = true;
 
 app.use(express.static(path.join(__dirname, "./static")));
 
@@ -95,10 +95,11 @@ var tilePoints = {
 };
 
 
-playerIPs = [0,0,0,0];
+playerIDs = [];
 playersPesent = [false, false, false, false];
 turnNum = 0
-playerNum = 0;
+playerNum = -1;
+
 playerScores = []
 playerLimit = 4;
 maxPlayerNum = -1;
@@ -174,17 +175,19 @@ function aKey(aSocket) {
 }
 
 io.on("connection", function (socket) {
+  playerNum++;
+  console.log("!clients.get(aKey(socket)   "+!clients.get(aKey(socket)));
+  
   if(!clients.get(aKey(socket))){
     console.log(aKey(socket)+ " CLIENTS ADDING "+ playerNum);
-
     clients.set(aKey(socket), playerNum);
   }
-  playerNum++;
 
   socket.on("reset", function() {
     timerCanGo = false;
     turnNum = 0
     playerScores = []
+    playerIDs = [];
     maxPlayerNum = -1;
     hands = [
       ["","","","","","",""],
@@ -267,19 +270,20 @@ io.on("connection", function (socket) {
     console.log("ID  ::: "+ID);
     console.log("playerNum  ::: "+playerNum);
     console.log("playersPesent[ID]  ::: "+playersPesent[ID]);
+    console.log("playerIDs  ::: "+playerIDs);
     
-    
-    if(ID < playerNum-1) { // Player is rejoining
+    if(playerIDs.includes(ID)) { // Player is rejoining
       if(playersPesent[ID]) { // Already here
         socket.emit("receiveStartingVars", {ID:-1})
       } else {
         console.log("Welcoming pre-existing Player");
         console.log("playersPesent[ID] " + playersPesent[ID]);
-        socket.emit("receiveStartingVars", {ID:ID, hand:hands[ID]})
+        socket.emit("receiveStartingVars", {ID:playerIDs.indexOf(ID), hand:hands[ID]})
         playersPesent[ID] = true;
         io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
       }
-    } else if(ID < playerLimit) {
+    } else if(playerIDs.length < playerLimit) {// New player
+      playerIDs.push(ID)
       playersPesent[playerNum] = true;
 
       console.log("Adding Player");
@@ -291,7 +295,8 @@ io.on("connection", function (socket) {
         playerScores.push(0);
       }
       io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
-      socket.emit("receiveStartingVars", {ID:ID})
+      socket.emit("receiveStartingVars", {ID:playerIDs.indexOf(ID)})
+
     } else { // is new spectator
       console.log("Adding Spectator");
       socket.emit("receiveStartingVars", {ID:-1})
@@ -367,7 +372,7 @@ io.on("connection", function (socket) {
   socket.on('disconnect', function() {
     ID = clients.get(aKey(socket));
 
-    if(ID >= playerLimit)   
+    if(ID >= playerLimit)
       console.log("Spectator left");
     if(ID <= playerLimit) {
       console.log("Player left");
