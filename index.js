@@ -178,7 +178,7 @@ io.on("connection", function (socket) {
   playerNum++;
   console.log("!clients.get(aKey(socket)   "+!clients.get(aKey(socket)));
   
-  if(!clients.get(aKey(socket))){
+  if(clients.get(aKey(socket)) == null){
     console.log(aKey(socket)+ " CLIENTS ADDING "+ playerNum);
     clients.set(aKey(socket), playerNum);
   }
