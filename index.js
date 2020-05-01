@@ -94,6 +94,9 @@ var tilePoints = {
   _blank:0
 };
 
+
+playerIPs = [0,0,0,0];
+playersPesent = [false, false, false, false];
 turnNum = 0
 playerNum = -1;
 playerScores = []
@@ -117,11 +120,16 @@ var clientId = 0;
 
 function endTurn()
 {
-  if(playerNum < playerLimit)
-    turnNum = (turnNum+1)%(playerNum+1);
-  else
-    turnNum = (turnNum+1)%(playerLimit);
+  for(var i = 0; i < playerLimit; i++)
+  {
+    if(playerNum < playerLimit)
+      turnNum = (turnNum+1)%(playerNum+1);
+    else
+      turnNum = (turnNum+1)%(playerLimit);
 
+    if(playersPesent[turnNum])
+      break;
+  } 
   // Getting new tiles
   io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
 }
@@ -168,7 +176,7 @@ function aKey(aSocket) {
 
 io.on("connection", function (socket) {
 
-  socket.on("reset", function(){
+  socket.on("reset", function() {
     timerCanGo = false;
     turnNum = 0
     playerScores = []
@@ -249,18 +257,47 @@ io.on("connection", function (socket) {
     io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
   });
 
-  playerNum++;
-  socket.on("requestID", function(msg){
-    console.log("playerNum :: "+playerNum);
+  socket.on("requestStartingVars", function(msg) {
+    playerNum++;
+    console.log("REQUESTINGVARS players: "+playerNum);
+    console.log("1. "+playerIPs);
+  
+    index = playerIPs.indexOf(socket.handshake.address)
+    console.log("Index  :::  "+index);
     
-    if(playerNum < playerLimit){
-      console.log("Adding Player");
-      socket.emit("receiveID", playerNum)
-    }else{
-      console.log("Adding Spectator");
-      socket.emit("receiveID", -1)
+    if(index != -1) { // Player is rejoining
+      if(playersPesent[index]) { // Already here
+        socket.emit("receiveStartingVars", {ID:-1})
+      } else {
+        console.log("Welcoming pre-existing Player");
+        console.log("playersPesent[index] " + playersPesent[index]);
+        socket.emit("receiveStartingVars", {ID:index, hand:hands[index]})
+        playersPesent[index] = true;
+        io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
+      }
+    } else { // Is new player
+      if(playerNum < playerLimit) {
+        playerIPs[playerNum] = socket.handshake.address;
+        playersPesent[playerNum] = true;
+
+        console.log("Adding Player");
+        if(playerNum > maxPlayerNum && playerNum < playerLimit)
+        {
+          console.log("adding new score slot");
+          
+          maxPlayerNum = playerNum;
+          playerScores.push(0);
+        }
+        io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
+        socket.emit("receiveStartingVars", {ID:playerNum})
+      } else { // is new spectator
+        console.log("Adding Spectator");
+        socket.emit("receiveStartingVars", {ID:-1})
+      }
     }
-  })
+    console.log("2. "+playerIPs);
+
+  });
 
   socket.on("requestTiles", function(msg){
     oldHand = msg.oldHand;
@@ -328,21 +365,19 @@ io.on("connection", function (socket) {
     }
   });
 
-  if(playerNum > maxPlayerNum && playerNum < playerLimit)
-  {
-    console.log("adding new score slot");
-    
-    maxPlayerNum = playerNum;
-    playerScores.push(0);
-  }
-  io.emit("updateVars", { playerNum: playerNum, playerScores:playerScores, turnNum:turnNum, board:board});
-
-  var aKey = socket.id;
-  clients.set(aKey, { id: playerNum });
-
   socket.on('disconnect', function() {
-    console.log("disconnect from: " + socket.io + "  ip: " + socket.handshake.address);
-    playerNum--;
+    index = playerIPs.indexOf(socket.handshake.address);
+
+    if(index == -1) {    
+      // console.log("disconnect from: " + socket.io + "  ip: " + socket.handshake.address);
+      console.log("Spectator left");
+      if(playerNum > -1)
+        playerNum--;
+    } else {
+      playersPesent[index] = false;
+    }
+
+
   });
 
 });
@@ -353,7 +388,5 @@ http.listen(port, function () {
 
 
 app.get("/", function (req, res) {
-  console.log("HUGE TEST TIME!!!!!!    :::::    "+clientId);
-  if(clientId < 4)
-    res.sendFile(__dirname + "./index.html");
+  res.sendFile(__dirname + "./index.html");
 });
